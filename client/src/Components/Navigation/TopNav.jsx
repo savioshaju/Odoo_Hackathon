@@ -108,7 +108,7 @@ export default function TopNav({ onToggleMobileMenu }) {
             className="p-2 text-slateGray hover:text-deepNavy rounded-xl hover:bg-mainBg border border-transparent hover:border-softLavender transition cursor-pointer relative"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#5145E5] ring-2 ring-white" />
+            
           </button>
 
           {notificationsOpen && (
@@ -122,7 +122,7 @@ export default function TopNav({ onToggleMobileMenu }) {
                   <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-deepNavy">Recurring run completed</p>
-                    <p className="text-[11px] text-slateGray">142 invoices billed successfully ($32,840.00)</p>
+                    <p className="text-[11px] text-slateGray">No recent system billing activity</p>
                     <span className="text-[10px] text-slateGray/70 mt-1 block">5 mins ago</span>
                   </div>
                 </div>
