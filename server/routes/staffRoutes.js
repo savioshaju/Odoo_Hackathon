@@ -1,31 +1,32 @@
 const express = require('express')
+const { 
+    staffLogin, 
+    registerStaff, 
+    staffLogout, 
+    getStaffProfile, 
+    updateStaffProfile, 
+    getAllStaff 
+} = require('../controller/staffController')
+const { requireRole } = require('../middleware/roleAuth')
+
 const router = express.Router() 
 
 router.use((req, res, next) => {
-    console.log('Routes: user')
+    console.log('Routes: staff')
     next()
 })
 
-// Authentication
-router.post('/register')
-router.post('/login')
-router.post('/logout')
+// Public Staff Auth
+router.post('/login', staffLogin)
+router.post('/logout', staffLogout)
 
-// Profile
-router.get('/profile')
-router.put('/profile')
-router.delete('/account')
+// Admin-managed Staff Onboarding
+router.post('/register', requireRole(['admin']), registerStaff)
+router.get('/', requireRole(['admin']), getAllStaff)
 
-// Password Management
-router.put('/change-password')
-router.post('/forgot-password')
-router.post('/reset-password')
-
-// User Management
-router.get('/')
-router.get('/:id')
-router.put('/:id')
-router.delete('/:id')
+// Staff Profile (Protected: staff or admin)
+router.get('/profile', requireRole(['staff', 'admin']), getStaffProfile)
+router.put('/profile', requireRole(['staff', 'admin']), updateStaffProfile)
 
 const staffRouter = router
 module.exports = { staffRouter }
