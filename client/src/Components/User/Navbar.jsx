@@ -3,17 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearUserData } from '../../store/slice/userSlice';
 import { toast } from 'react-toastify';
+import axiosInstance from '../../Config/axiosInstance';
 
 export default function Navbar() {
   const user = useSelector((state) => state.user?.userData);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch(clearUserData());
-    localStorage.removeItem('token');
-    toast.info('Logged out successfully');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post('/users/logout');
+    } catch (err) {
+      console.warn('Logout error:', err);
+    } finally {
+      dispatch(clearUserData());
+      localStorage.removeItem('token');
+      toast.info('Logged out successfully');
+      navigate('/login');
+    }
   };
 
   return (
@@ -26,6 +33,7 @@ export default function Navbar() {
         {user ? (
           <>
             <Link to="/dashboard" className="hover:text-indigo-600 transition">Dashboard</Link>
+            <Link to="/profile" className="hover:text-indigo-600 transition">Profile</Link>
             <span className="text-gray-400">|</span>
             <span className="text-gray-900 font-semibold">{user.name}</span>
             <button

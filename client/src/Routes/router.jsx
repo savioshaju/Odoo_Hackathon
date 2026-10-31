@@ -6,6 +6,8 @@ import Home from "../Pages/User/Home";
 import Login from "../Pages/User/Login";
 import Signup from "../Pages/User/Signup";
 import Dashboard from "../Pages/User/Dashboard";
+import Profile from "../Pages/User/Profile";
+import ForgotPassword from "../Pages/User/ForgotPassword";
 import AdminHome from "../Pages/Admin/AdminHome";
 
 const router = createBrowserRouter([
@@ -21,6 +23,10 @@ const router = createBrowserRouter([
             {
                 path: 'dashboard',
                 element: <Dashboard />
+            },
+            {
+                path: 'profile',
+                element: <Profile />
             }
         ]
     },
@@ -32,6 +38,11 @@ const router = createBrowserRouter([
     {
         path: '/signup',
         element: <Signup />,
+        errorElement: <Errorpage />
+    },
+    {
+        path: '/forgot-password',
+        element: <ForgotPassword />,
         errorElement: <Errorpage />
     },
     {

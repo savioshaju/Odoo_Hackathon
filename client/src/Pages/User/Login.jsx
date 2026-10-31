@@ -62,8 +62,8 @@ export default function Login() {
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
         }
-        // Navigate directly to dashboard after login
-        navigate('/dashboard');
+        // Navigate to profile or dashboard
+        navigate('/profile');
       } else {
         toast.error(response.data?.message || 'Login failed');
       }
@@ -111,13 +111,21 @@ export default function Login() {
               <label className="block text-sm font-semibold text-gray-700">
                 Password <span className="text-red-500">*</span>
               </label>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Forgot password?
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-xs text-gray-500 hover:text-gray-700 font-medium cursor-pointer"
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
             <input
               type={showPassword ? 'text' : 'password'}
@@ -153,7 +161,7 @@ export default function Login() {
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
           <Link to="/signup" className="text-indigo-600 font-semibold hover:underline">
-            Sign up
+            Create account
           </Link>
         </p>
       </div>

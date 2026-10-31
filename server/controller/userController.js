@@ -3,7 +3,12 @@ const jwt = require('jsonwebtoken');
 const { User } = require('../model/userModel');
 const { sendOTPEmail } = require('../config/mailer');
 
-const cookieOptions = { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 };
+const cookieOptions = { 
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax', 
+    maxAge: 7 * 24 * 60 * 60 * 1000 
+};
 
 // Strict email regex: requires valid local part, domain, and TLD of at least 2 characters
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -15,20 +20,21 @@ const PHONE_REGEX = /^\d{10}$/;
 // Format: email -> { otp: string, userData: object, expiresAt: number }
 const otpStore = new Map();
 
+// In-memory password reset OTP store
+// Format: email -> { otp: string, expiresAt: number }
+const passwordResetOtpStore = new Map();
+
 function isText(value) {
     return typeof value === 'string' && value.trim() !== '';
 }
 
-function isValidPassword(value) {
-    return typeof value === 'string' && value.length >= 6;
-}
-
 function cleanEmail(email) {
-    return email.trim().toLowerCase();
+    return email ? email.toString().trim().toLowerCase() : '';
 }
 
 function withoutPassword(user) {
-    const { password, ...rest } = user.toObject();
+    const obj = typeof user.toObject === 'function' ? user.toObject() : user;
+    const { password, ...rest } = obj;
     return rest;
 }
 
@@ -89,7 +95,7 @@ async function userSignup(req, res, next) {
             return res.status(400).json({ success: false, message: 'Passwords do not match' });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedEmail = cleanEmail(email);
 
         // Check if email already exists in MongoDB
         const existingEmail = await User.findOne({ email: normalizedEmail });
@@ -114,7 +120,7 @@ async function userSignup(req, res, next) {
 
         // Generate 6-digit numeric OTP
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
         // Save OTP and temporary data in memory (NOT in database)
         otpStore.set(normalizedEmail, {
@@ -151,7 +157,7 @@ async function verifySignupOTP(req, res, next) {
             return res.status(400).json({ success: false, message: 'Email and OTP are required' });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedEmail = cleanEmail(email);
         const record = otpStore.get(normalizedEmail);
 
         if (!record) {
@@ -219,7 +225,7 @@ async function verifySignupOTP(req, res, next) {
     }
 }
 
-// 3. Resend OTP
+// 3. Resend OTP for Signup
 async function resendSignupOTP(req, res, next) {
     try {
         const { email } = req.body;
@@ -227,7 +233,7 @@ async function resendSignupOTP(req, res, next) {
             return res.status(400).json({ success: false, message: 'Email is required' });
         }
 
-        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedEmail = cleanEmail(email);
         const record = otpStore.get(normalizedEmail);
 
         if (!record) {
@@ -237,7 +243,6 @@ async function resendSignupOTP(req, res, next) {
             });
         }
 
-        // Generate new OTP
         const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
         record.otp = newOtp;
         record.expiresAt = Date.now() + 10 * 60 * 1000;
@@ -255,6 +260,7 @@ async function resendSignupOTP(req, res, next) {
     }
 }
 
+// 4. User Login
 async function userLogin(req, res, next) {
     try {
         const { identifier, email, phone, password } = req.body;
@@ -296,12 +302,7 @@ async function userLogin(req, res, next) {
         );
 
         if (typeof res.cookie === 'function') {
-            res.cookie('token', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 7 * 24 * 60 * 60 * 1000,
-            });
+            res.cookie('token', token, cookieOptions);
         }
 
         return res.status(200).json({
@@ -322,129 +323,207 @@ async function userLogin(req, res, next) {
     }
 }
 
+// 5. User Logout
 async function userLogout(req, res, next) {
     try {
         res.clearCookie('token', cookieOptions);
-        res.status(200).json({ message: 'Logout successful' });
+        return res.status(200).json({ success: true, message: 'Logged out successfully' });
     } catch (err) {
         next(err);
     }
 }
 
+// 6. Get User Profile
 async function getUserProfile(req, res, next) {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        const userId = req.userId || req.user?.id;
+        const user = await User.findById(userId).select('-password');
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
-        res.status(200).json({ user });
+        return res.status(200).json({ success: true, user });
     } catch (err) {
         next(err);
     }
 }
 
+// 7. Update User Profile (name & 10-digit phone)
 async function updateUserProfile(req, res, next) {
     try {
+        const userId = req.userId || req.user?.id;
         const { name, phone } = req.body;
-        if ((name !== undefined && !isText(name)) || (phone !== undefined && typeof phone !== 'string')) {
-            return res.status(400).json({ message: 'Invalid name or phone' });
-        }
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (name !== undefined) user.name = name;
-        if (phone !== undefined) user.phone = phone;
+        if (name !== undefined) {
+            if (!name || name.trim().length < 2) {
+                return res.status(400).json({ success: false, message: 'Name must be at least 2 characters long' });
+            }
+            user.name = name.trim();
+        }
+
+        if (phone !== undefined) {
+            const cleanedPhone = phone.toString().trim().replace(/\D/g, '');
+            if (!PHONE_REGEX.test(cleanedPhone)) {
+                return res.status(400).json({ success: false, message: 'Phone number must be exactly 10 digits' });
+            }
+            // Check if phone number is taken by another user
+            const phoneOwner = await User.findOne({ phone: cleanedPhone, _id: { $ne: userId } });
+            if (phoneOwner) {
+                return res.status(400).json({ success: false, message: 'This phone number is already in use by another account' });
+            }
+            user.phone = cleanedPhone;
+        }
 
         await user.save();
-        res.status(200).json({ message: 'Profile updated', user: withoutPassword(user) });
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Profile updated successfully', 
+            user: withoutPassword(user) 
+        });
     } catch (err) {
         next(err);
     }
 }
 
+// 8. Delete User Account
 async function deleteUserAccount(req, res, next) {
     try {
-        const user = await User.findByIdAndDelete(req.user.id);
+        const userId = req.userId || req.user?.id;
+        const user = await User.findByIdAndDelete(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
         res.clearCookie('token', cookieOptions);
-        res.status(200).json({ message: 'Account deleted' });
+        return res.status(200).json({ success: true, message: 'Account deleted successfully' });
     } catch (err) {
         next(err);
     }
 }
 
+// 9. Change Password (logged-in user with current password validation)
 async function changeUserPassword(req, res, next) {
     try {
-        const { currentPassword, newPassword } = req.body;
-        if (!isText(currentPassword) || !isValidPassword(newPassword)) {
-            return res.status(400).json({ message: 'Current password and a new password of at least 6 characters are required' });
+        const userId = req.userId || req.user?.id;
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        if (!currentPassword) {
+            return res.status(400).json({ success: false, message: 'Current password is required' });
         }
 
-        const user = await User.findById(req.user.id);
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) {
+            return res.status(400).json({ success: false, message: passwordError });
+        }
+
+        if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+            return res.status(400).json({ success: false, message: 'New passwords do not match' });
+        }
+
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         const passwordMatch = await bcrypt.compare(currentPassword, user.password);
         if (!passwordMatch) {
-            return res.status(401).json({ message: 'Current password is incorrect' });
+            return res.status(400).json({ success: false, message: 'Current password is incorrect' });
         }
 
         user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
 
-        res.status(200).json({ message: 'Password changed' });
+        return res.status(200).json({ success: true, message: 'Password changed successfully' });
     } catch (err) {
         next(err);
     }
 }
 
+// 10. Forgot Password - Request 6-digit OTP to Email
 async function forgotUserPassword(req, res, next) {
     try {
         const { email } = req.body;
-        if (!isText(email)) {
-            return res.status(400).json({ message: 'Email is required' });
+        if (!email || !EMAIL_REGEX.test(email.trim())) {
+            return res.status(400).json({ success: false, message: 'Please provide a valid registered email address' });
         }
 
-        const user = await User.findOne({ email: cleanEmail(email) });
+        const normalizedEmail = cleanEmail(email);
+        const user = await User.findOne({ email: normalizedEmail });
+
+        // We don't expose if user does not exist, but if exists, send OTP
         if (user) {
-            const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY + user.password, { expiresIn: '15m' });
-            console.log('resetToken :>> ', resetToken);
+            const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+            // In-memory OTP store
+            passwordResetOtpStore.set(normalizedEmail, {
+                otp: otpCode,
+                expiresAt,
+            });
+
+            await sendOTPEmail(normalizedEmail, otpCode);
         }
 
-        res.status(200).json({ message: 'If the email is registered, reset instructions will be sent' });
+        return res.status(200).json({ 
+            success: true, 
+            message: 'If this email is registered, a 6-digit verification code has been sent to it.' 
+        });
     } catch (err) {
         next(err);
     }
 }
 
+// 11. Reset Password - Verify OTP & Set New Password
 async function resetUserPassword(req, res, next) {
     try {
-        const { email, token, newPassword } = req.body;
-        if (!isText(email) || !isText(token) || !isValidPassword(newPassword)) {
-            return res.status(400).json({ message: 'Email, token and a new password of at least 6 characters are required' });
+        const { email, otp, newPassword, confirmPassword } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, message: 'Email and OTP code are required' });
         }
 
-        const user = await User.findOne({ email: cleanEmail(email) });
+        const normalizedEmail = cleanEmail(email);
+        const record = passwordResetOtpStore.get(normalizedEmail);
+
+        if (!record) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Password reset session expired or invalid. Please request a new code.' 
+            });
+        }
+
+        if (record.otp !== otp.toString().trim()) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP code' });
+        }
+
+        if (Date.now() > record.expiresAt) {
+            passwordResetOtpStore.delete(normalizedEmail);
+            return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+        }
+
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) {
+            return res.status(400).json({ success: false, message: passwordError });
+        }
+
+        if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+            return res.status(400).json({ success: false, message: 'Passwords do not match' });
+        }
+
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid or expired token' });
-        }
-
-        try {
-            jwt.verify(token, process.env.JWT_SECRET_KEY + user.password);
-        } catch (err) {
-            return res.status(400).json({ message: 'Invalid or expired token' });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
 
-        res.status(200).json({ message: 'Password reset successful' });
+        passwordResetOtpStore.delete(normalizedEmail);
+
+        return res.status(200).json({ success: true, message: 'Password has been reset successfully. Please log in with your new password.' });
     } catch (err) {
         next(err);
     }
