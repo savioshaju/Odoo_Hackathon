@@ -222,7 +222,7 @@ export default function Discounts() {
             className="flex items-center gap-2 bg-primary hover:bg-indigo-600 text-white font-semibold px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer text-sm"
           >
             <Plus className="w-4 h-4" />
-            <span>+ Add Discount</span>
+            <span>Add Discount</span>
           </button>
         </div>
       </div>

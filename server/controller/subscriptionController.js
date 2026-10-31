@@ -55,6 +55,8 @@ async function createSubscription(req, res, next) {
         const newSubscription = await Subscription.create({
             userId,
             serviceId,
+            planName: planName || '',
+            durationInDays: duration,
             startDate: effectiveStartDate,
             endDate: effectiveEndDate,
             amountPaid: priceNumber,

@@ -116,7 +116,9 @@ export default function Subscriptions() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {subscriptions.map((sub) => {
               const isActive = sub.status === 'active';
-              const name = sub.serviceId?.name || sub.planName || 'Active Subscription';
+              const productName = sub.serviceId?.name || 'Active Service';
+              const name = sub.planName ? `${productName} · ${sub.planName}` : (sub.serviceId?.name || 'Active Subscription');
+              const durationDays = sub.durationInDays || sub.serviceId?.duration || 30;
               const price = sub.amountPaid !== undefined ? sub.amountPaid : (sub.price || 0);
               const nextDate = sub.endDate || sub.nextBillingDate;
               const features = sub.serviceId?.features || sub.features || [];
@@ -132,7 +134,7 @@ export default function Subscriptions() {
                     {/* Top pill & status */}
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-[11px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> {sub.serviceId?.duration ? `${sub.serviceId.duration} Days` : 'Subscription'}
+                        <Sparkles className="w-3 h-3" /> {durationDays} Days Duration
                       </span>
                       <span
                         className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${

@@ -214,7 +214,8 @@ export default function AdminPayments() {
                   filtered.map((sub) => {
                     const userName = sub.userId?.name || 'Customer';
                     const userEmail = sub.userId?.email || '—';
-                    const serviceName = sub.serviceId?.name || sub.planName || 'Software Service';
+                    const serviceName = sub.serviceId?.name || 'Software Service';
+                    const displayPlan = sub.planName ? `${serviceName} (${sub.planName})` : (sub.serviceId?.name || 'Software Service');
                     const amount = sub.amountPaid !== undefined ? sub.amountPaid : (sub.price || 0);
 
                     return (
@@ -224,7 +225,7 @@ export default function AdminPayments() {
                           <p className="text-[11px] text-slateGray">{userEmail}</p>
                         </td>
                         <td className="py-3.5 px-5 font-bold text-deepNavy">
-                          {serviceName}
+                          {displayPlan}
                         </td>
                         <td className="py-3.5 px-5 font-bold text-deepNavy">
                           ${amount}
