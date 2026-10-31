@@ -7,20 +7,22 @@ router.use((req, res, next) => {
     next()
 })
 
+const notImplemented = (req, res) => res.status(501).json({ message: 'Not implemented yet' });
+
 // Public routes
-router.post('/register')
-router.post('/login')
+router.post('/register', notImplemented)
+router.post('/login', notImplemented)
 
 // Company routes
-router.get('/profile')
-router.put('/profile')
-router.patch('/change-password')
-router.delete('/account')
+router.get('/profile', notImplemented)
+router.put('/profile', notImplemented)
+router.patch('/change-password', notImplemented)
+router.delete('/account', notImplemented)
 
 // Admin routes
-router.get('/')
-router.get('/:id')
-router.patch('/:id/status')
+router.get('/', notImplemented)
+router.get('/:id', notImplemented)
+router.patch('/:id/status', notImplemented)
 
 const companyRouter = router
 module.exports = { companyRouter }
