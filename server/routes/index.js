@@ -1,7 +1,7 @@
 
 const express = require('express')
 
-// const { userRouter } = require('./userRoutes')
+const { userRouter } = require('./userRoutes')
 // const { adminRouter } = require('./adminRoutes')
 // const { staffRouter } = require('./staffRoutes')
 
@@ -12,7 +12,7 @@ router.use((req, res, next) => {
     next()
 })
 
-// router.use('/users', userRouter)
+router.use('/users', userRouter)
 // router.use('/admin', adminRouter)
 // router.use('/staff', staffRouter)
 // router.use('/subscriptions')

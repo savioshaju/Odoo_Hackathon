@@ -23,10 +23,11 @@ router.post('/forgot-password', forgotUserPassword)
 router.post('/reset-password', resetUserPassword)
 
 // User Management
-router.get('/')
-router.get('/:id')
-router.put('/:id')
-router.delete('/:id')
+
+// router.get('/')
+// router.get('/:id')
+// router.put('/:id')
+// router.delete('/:id')
 
 const userRouter = router
 module.exports = { userRouter }
