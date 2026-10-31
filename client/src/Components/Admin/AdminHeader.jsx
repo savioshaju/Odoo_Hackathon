@@ -15,6 +15,9 @@ export default function AdminHeader() {
           <Link to="/admin/products" className="text-gray-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition">
             Products & Variants
           </Link>
+          <Link to="/admin/plans" className="text-gray-600 hover:text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition">
+            Plans & Discounts
+          </Link>
         </nav>
       </div>
       <div className="flex items-center gap-4">

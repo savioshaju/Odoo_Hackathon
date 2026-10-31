@@ -7,6 +7,7 @@ import Login from "../Pages/User/Login";
 import Signup from "../Pages/User/Signup";
 import AdminHome from "../Pages/Admin/AdminHome";
 import ProductsPage from "../Pages/Admin/ProductsPage";
+import PlansDiscountsPage from "../Pages/Admin/PlansDiscountsPage";
 
 const router = createBrowserRouter([
     {
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
             {
                 path: 'products',
                 element: <ProductsPage />
+            },
+            {
+                path: 'plans',
+                element: <PlansDiscountsPage />
             }
         ]
     }
