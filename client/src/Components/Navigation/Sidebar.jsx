@@ -8,6 +8,7 @@ import {
   Users, 
   Receipt, 
   DollarSign, 
+  Percent,
   ChevronLeft, 
   ChevronRight, 
   LogOut, 
@@ -76,6 +77,7 @@ export default function Sidebar({
         { label: 'Admin Overview', icon: LayoutDashboard, path: '/admin', roles: ['admin'] },
         { label: 'Customer Directory', icon: Users, path: '/admin/customers', roles: ['admin'] },
         { label: 'Service Packages', icon: Layers, path: '/admin/services', roles: ['admin'] },
+        { label: 'Discounts & Coupons', icon: Percent, path: '/admin/discounts', roles: ['admin'] },
         { label: 'Payments', icon: DollarSign, path: '/admin/payments', roles: ['admin'] },
       ]
     }

@@ -62,6 +62,13 @@ export default function AdminHome() {
       color: 'from-secondary to-accent'
     },
     {
+      title: 'Discounts & Coupons',
+      desc: 'Promotional discount campaigns and product-specific savings rules.',
+      path: '/admin/discounts',
+      icon: Percent,
+      color: 'from-amber-500 to-orange-500'
+    },
+    {
       title: 'Payments & Transactions',
       desc: 'Real-time client subscription settlement and invoice records.',
       path: '/admin/payments',
@@ -125,7 +132,7 @@ export default function AdminHome() {
             <Layers className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slateGray">DB Services</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slateGray">Services</p>
             <p className="text-xl sm:text-2xl font-black text-deepNavy mt-0.5">{stats.totalServices || 0}</p>
           </div>
         </div>

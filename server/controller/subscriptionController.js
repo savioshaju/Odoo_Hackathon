@@ -7,7 +7,7 @@ const { User } = require('../model/userModel');
 async function createSubscription(req, res, next) {
     try {
         const userId = req.userId || req.user?.id || req.body?.userId;
-        const { serviceId, startDate, durationInDays, amountPaid } = req.body || {};
+        const { serviceId, startDate, durationInDays, amountPaid, planName } = req.body || {};
 
         if (!userId) {
             return res.status(400).json({ success: false, message: 'User ID is required' });

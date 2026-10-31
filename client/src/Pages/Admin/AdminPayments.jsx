@@ -116,7 +116,7 @@ export default function AdminPayments() {
 
       const res = await axiosInstance.post('/subscriptions', payload);
       if (res.data?.success) {
-        toast.success('Subscription created and recorded in database!');
+        toast.success('Subscription created successfully!');
         setShowModal(false);
         fetchSubscriptions();
       } else {
@@ -267,7 +267,7 @@ export default function AdminPayments() {
             <div className="flex items-center justify-between pb-3 border-b border-softLavender">
               <div>
                 <h3 className="text-base font-black text-deepNavy">Create New Subscription</h3>
-                <p className="text-xs text-slateGray">Persists directly into MongoDB `Subscription` collection.</p>
+                <p className="text-xs text-slateGray">Assign a recurring plan to a customer.</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}

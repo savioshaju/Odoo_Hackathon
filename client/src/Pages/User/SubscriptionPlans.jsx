@@ -11,7 +11,9 @@ import {
   CreditCard,
   Calendar,
   ShieldCheck,
-  X
+  X,
+  Tag,
+  Percent
 } from 'lucide-react';
 import axiosInstance from '../../Config/axiosInstance';
 import { toast } from 'react-toastify';
@@ -27,6 +29,53 @@ export default function SubscriptionPlans() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [subscribing, setSubscribing] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.warn('Please enter a coupon code');
+      return;
+    }
+    setValidatingCoupon(true);
+    try {
+      const res = await axiosInstance.post('/discounts/validate', {
+        code: couponCode.trim(),
+        serviceId: selectedPlan?._id
+      });
+
+      if (res.data?.success && res.data?.discount) {
+        const disc = res.data.discount;
+        const basePrice = Number(selectedPlan.price || selectedPlan.monthlyPrice) || 0;
+        let saving = 0;
+        if (disc.type === 'percentage') {
+          saving = (basePrice * disc.value) / 100;
+        } else {
+          saving = Math.min(basePrice, disc.value);
+        }
+        const finalPrice = Math.max(0, basePrice - saving);
+
+        setAppliedDiscount({
+          ...disc,
+          saving,
+          finalPrice
+        });
+        toast.success(`Coupon ${disc.code} applied! Saved $${saving.toFixed(2)}`);
+      } else {
+        toast.error('Invalid coupon code');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Invalid or expired coupon code');
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedDiscount(null);
+    setCouponCode('');
+  };
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -65,7 +114,8 @@ export default function SubscriptionPlans() {
     if (!selectedPlan) return;
 
     const serviceId = selectedPlan._id;
-    const price = parseFloat(selectedPlan.price) || selectedPlan.monthlyPrice || 0;
+    const basePrice = parseFloat(selectedPlan.price) || selectedPlan.monthlyPrice || 0;
+    const price = appliedDiscount ? appliedDiscount.finalPrice : basePrice;
     const userId = currentUser.id || currentUser._id;
     const duration = Number(selectedPlan.duration) || 30;
 
@@ -80,7 +130,8 @@ export default function SubscriptionPlans() {
       }).catch(() => 
         axiosInstance.post('/subscriptions/subscribe', {
           planId: selectedPlan.planCode || serviceId,
-          billingCycle: 'monthly'
+          billingCycle: 'monthly',
+          amountPaid: price
         })
       );
 
@@ -104,7 +155,7 @@ export default function SubscriptionPlans() {
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto">
         <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20 inline-flex items-center gap-1.5 mb-3">
-          <Crown className="w-3.5 h-3.5" /> Database Plans & Services
+          <Crown className="w-3.5 h-3.5" /> Flexible Subscription Tiers
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-deepNavy tracking-tight">
           Subscription Tiers
@@ -118,7 +169,7 @@ export default function SubscriptionPlans() {
       {loading ? (
         <div className="p-16 text-center bg-white rounded-3xl border border-softLavender shadow-premium">
           <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-bold text-slateGray">Loading plans from MongoDB...</p>
+          <p className="text-xs font-bold text-slateGray">Loading subscription plans...</p>
         </div>
       ) : plans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
@@ -224,7 +275,7 @@ export default function SubscriptionPlans() {
             <div className="flex items-center justify-between pb-3 border-b border-softLavender">
               <div>
                 <h3 className="text-base font-black text-deepNavy">New Subscription Checkout</h3>
-                <p className="text-xs text-slateGray">Backed by live MongoDB database records.</p>
+                <p className="text-xs text-slateGray">Select your start date and review pricing.</p>
               </div>
               <button
                 type="button"
@@ -263,6 +314,53 @@ export default function SubscriptionPlans() {
                 </div>
               </div>
 
+              {/* Promo Code / Discount Section */}
+              <div className="space-y-1.5 pt-1">
+                <label className="font-bold text-deepNavy flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5 text-primary" />
+                  <span>Promo / Discount Code</span>
+                </label>
+
+                {appliedDiscount ? (
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-black text-xs text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                        {appliedDiscount.code}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-700">
+                        {appliedDiscount.type === 'percentage' ? `${appliedDiscount.value}% OFF` : `$${appliedDiscount.value} OFF`}
+                        {' '}(-${appliedDiscount.saving.toFixed(2)})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. SAVE20, LAUNCH50"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="flex-1 px-3 py-2 bg-mainBg border border-softLavender rounded-xl text-deepNavy text-xs uppercase font-mono font-semibold placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={validatingCoupon}
+                      className="px-3.5 py-2 bg-deepNavy hover:bg-slate-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+                    >
+                      {validatingCoupon ? 'Validating...' : 'Apply'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Payment Method Preview */}
               <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -272,9 +370,16 @@ export default function SubscriptionPlans() {
                     <p className="text-[10px] text-slateGray">Card on file (•••• 4242)</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  Instant Access
-                </span>
+                <div className="text-right">
+                  {appliedDiscount && (
+                    <div className="text-[10px] text-slateGray line-through">
+                      ${Number(selectedPlan.price || selectedPlan.monthlyPrice).toFixed(2)}
+                    </div>
+                  )}
+                  <div className="text-sm font-black text-emerald-700">
+                    ${(appliedDiscount ? appliedDiscount.finalPrice : Number(selectedPlan.price || selectedPlan.monthlyPrice)).toFixed(2)}
+                  </div>
+                </div>
               </div>
 
               {/* Subscriber info */}
@@ -286,7 +391,7 @@ export default function SubscriptionPlans() {
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-softLavender">
                 <button
                   type="button"
-                  onClick={() => setSelectedPlan(null)}
+                  onClick={() => { setSelectedPlan(null); setAppliedDiscount(null); setCouponCode(''); }}
                   className="px-4 py-2 border border-softLavender text-slateGray hover:text-deepNavy rounded-xl font-bold cursor-pointer transition"
                 >
                   Cancel
@@ -296,7 +401,9 @@ export default function SubscriptionPlans() {
                   disabled={subscribing}
                   className="px-5 py-2 bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-xl shadow-md cursor-pointer transition disabled:opacity-50"
                 >
-                  {subscribing ? 'Creating Subscription...' : `Confirm & Pay $${selectedPlan.price || selectedPlan.monthlyPrice}`}
+                  {subscribing 
+                    ? 'Creating Subscription...' 
+                    : `Confirm & Pay $${(appliedDiscount ? appliedDiscount.finalPrice : Number(selectedPlan.price || selectedPlan.monthlyPrice)).toFixed(2)}`}
                 </button>
               </div>
             </form>

@@ -6,6 +6,7 @@ const { adminRouter } = require('./adminRoutes');
 const { paymentRouter } = require('./paymentRoutes');
 const { serviceRouter } = require('./serviceRoutes');
 const { subscriptionRouter } = require('./subscriptionRoutes');
+const { discountRouter } = require('./discountRoutes');
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.use('/service', serviceRouter);
 router.use('/services', serviceRouter);
 router.use('/subscriptions', subscriptionRouter);
 router.use('/payment', paymentRouter);
+router.use('/discounts', discountRouter);
 
 const apiRouter = router;
 module.exports = { apiRouter };

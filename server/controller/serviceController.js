@@ -2,15 +2,19 @@ const mongoose = require('mongoose');
 const { Service } = require('../model/serviceModel');
 const { Company } = require('../model/companyModel');
 
-// POST / - Create a new service
+// POST / - Create a new service/product with multiple subscription plans
 async function createService(req, res, next) {
     try {
-        const { name, companyId, description, features, price, duration, isActive } = req.body;
+        const { name, companyId, description, features, price, duration, plans, isActive } = req.body;
 
-        if (!name || !companyId || !description || price === undefined || duration === undefined) {
+        const hasPlans = Array.isArray(plans) && plans.length > 0;
+        const effectivePrice = price !== undefined ? price : (hasPlans ? plans[0].price : undefined);
+        const effectiveDuration = duration !== undefined ? duration : (hasPlans ? plans[0].duration : undefined);
+
+        if (!name || !companyId || !description || effectivePrice === undefined || effectiveDuration === undefined) {
             return res.status(400).json({
                 success: false,
-                message: 'Name, companyId, description, price, and duration are required'
+                message: 'Name, companyId, description, and at least one subscription plan or price/duration are required'
             });
         }
 
@@ -29,13 +33,30 @@ async function createService(req, res, next) {
             });
         }
 
+        const formattedPlans = hasPlans ? plans.map(p => ({
+            name: (p.name || 'Standard').trim(),
+            duration: Number(p.duration) || 30,
+            price: Number(p.price) || 0,
+            discountPercentage: Math.max(0, Math.min(100, Number(p.discountPercentage) || 0)),
+            features: Array.isArray(p.features) ? p.features : []
+        })) : [
+            {
+                name: 'Standard Plan',
+                duration: Number(effectiveDuration),
+                price: Number(effectivePrice),
+                discountPercentage: 0,
+                features: Array.isArray(features) ? features : []
+            }
+        ];
+
         const newService = await Service.create({
             name: name.trim(),
             companyId,
             description: description.trim(),
             features: Array.isArray(features) ? features : [],
-            price: String(price).trim(),
-            duration: Number(duration),
+            price: String(effectivePrice).trim(),
+            duration: Number(effectiveDuration),
+            plans: formattedPlans,
             isActive: isActive !== undefined ? Boolean(isActive) : true
         });
 
@@ -102,7 +123,7 @@ async function getServiceById(req, res, next) {
             });
         }
 
-        const service = await Service.findById(id).populate('companyId', 'name email logo description address');
+        const service = await Service.findById(id).populate('companyId', 'name email logo description');
 
         if (!service) {
             return res.status(404).json({
@@ -158,7 +179,7 @@ async function updateService(req, res, next) {
             });
         }
 
-        const { name, description, features, price, duration, isActive, companyId } = req.body;
+        const { name, description, features, price, duration, plans, isActive, companyId } = req.body;
         const updates = {};
 
         if (name !== undefined) updates.name = name.trim();
@@ -167,6 +188,20 @@ async function updateService(req, res, next) {
         if (price !== undefined) updates.price = String(price).trim();
         if (duration !== undefined) updates.duration = Number(duration);
         if (isActive !== undefined) updates.isActive = Boolean(isActive);
+
+        if (Array.isArray(plans)) {
+            updates.plans = plans.map(p => ({
+                name: (p.name || 'Standard').trim(),
+                duration: Number(p.duration) || 30,
+                price: Number(p.price) || 0,
+                discountPercentage: Math.max(0, Math.min(100, Number(p.discountPercentage) || 0)),
+                features: Array.isArray(p.features) ? p.features : []
+            }));
+            if (updates.plans.length > 0 && price === undefined) {
+                updates.price = String(updates.plans[0].price);
+                updates.duration = updates.plans[0].duration;
+            }
+        }
 
         if (companyId) {
             if (!mongoose.Types.ObjectId.isValid(companyId)) {
@@ -228,7 +263,6 @@ async function updateServiceStatus(req, res, next) {
             });
         }
 
-        // Set to explicit boolean if provided, otherwise toggle
         const newStatus = req.body.isActive !== undefined ? Boolean(req.body.isActive) : !service.isActive;
 
         service.isActive = newStatus;

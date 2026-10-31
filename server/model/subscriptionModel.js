@@ -13,6 +13,15 @@ const subscriptionSchema = mongoose.Schema({
         required: true
     },
 
+    planName: {
+        type: String,
+        default: ''
+    },
+
+    durationInDays: {
+        type: Number
+    },
+
     startDate: {
         type: Date,
         required: true,

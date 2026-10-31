@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Layers, 
   Plus, 
@@ -7,13 +8,17 @@ import {
   Search, 
   CheckCircle2, 
   X,
-  Package
+  Package,
+  Percent,
+  Tag
 } from 'lucide-react';
 import axiosInstance from '../../Config/axiosInstance';
 import { toast } from 'react-toastify';
 
 export default function ProductVariants() {
+  const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
+  const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -30,9 +35,15 @@ export default function ProductVariants() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get('/service').catch(() => axiosInstance.get('/services')).catch(() => null);
+      const [res, discRes] = await Promise.all([
+        axiosInstance.get('/service').catch(() => axiosInstance.get('/services')).catch(() => null),
+        axiosInstance.get('/discounts').catch(() => null)
+      ]);
       if (res?.data?.services) {
         setPlans(res.data.services);
+      }
+      if (discRes?.data?.discounts) {
+        setDiscounts(discRes.data.discounts);
       }
     } catch (err) {
       console.error('Failed to load variants:', err);
@@ -73,7 +84,7 @@ export default function ProductVariants() {
       );
 
       if (res.data?.success) {
-        toast.success('Product variant created in database!');
+        toast.success('Product variant created successfully!');
         setShowModal(false);
         setFormData({
           name: '',
@@ -94,13 +105,13 @@ export default function ProductVariants() {
   };
 
   const handleDeletePlan = async (planId, planName) => {
-    if (!window.confirm(`Are you sure you want to deactivate "${planName}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete "${planName}"?`)) return;
     try {
       const res = await axiosInstance.delete(`/service/${planId}`).catch(() => 
         axiosInstance.delete(`/services/${planId}`)
       );
       if (res.data?.success) {
-        toast.info('Variant deactivated');
+        toast.info('Variant removed');
         setPlans(plans.filter(p => p._id !== planId));
       } else {
         toast.error(res.data?.message || 'Failed to delete');
@@ -172,44 +183,71 @@ export default function ProductVariants() {
           {filtered.map((p) => (
             <div 
               key={p._id} 
-              className="bg-white p-5 rounded-2xl border border-softLavender shadow-xs flex flex-col justify-between group"
+              className="bg-white p-6 rounded-2xl border border-softLavender shadow-xs flex flex-col justify-between group hover:border-primary/40 transition-colors"
             >
               <div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-slateGray bg-mainBg px-2 py-0.5 rounded-md border border-softLavender">
-                  ID: {p._id.slice(-6)}
-                </span>
-                <h4 className="text-base font-bold text-deepNavy mt-2">{p.name}</h4>
-                <p className="text-xs text-slateGray mt-0.5">{p.description}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-base font-bold text-deepNavy">{p.name}</h4>
+                  <button
+                    onClick={() => handleDeletePlan(p._id, p.name)}
+                    className="p-1.5 text-slateGray hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer shrink-0"
+                    title="Remove variant"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                {p.description && (
+                  <p className="text-xs text-slateGray mt-1 leading-relaxed">{p.description}</p>
+                )}
 
-                <div className="mt-4 pt-3 border-t border-softLavender flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-deepNavy">${p.price}</span>
-                  <span className="text-xs text-slateGray">/ {p.duration ? `${p.duration} Days` : '30 Days'}</span>
+                <div className="mt-4 pt-3 border-t border-softLavender flex items-baseline justify-between gap-1.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-2xl font-black text-deepNavy">${p.price}</span>
+                    <span className="text-xs text-slateGray">/ {p.duration ? `${p.duration} days` : 'month'}</span>
+                  </div>
+
+                  <button
+                    onClick={() => navigate('/admin/discounts')}
+                    className="flex items-center gap-1 text-[11px] font-bold text-primary hover:text-indigo-700 bg-primary/10 hover:bg-primary/20 px-2.5 py-1 rounded-lg transition cursor-pointer"
+                    title="Add discount to this product"
+                  >
+                    <Percent className="w-3 h-3" />
+                    <span>+ Discount</span>
+                  </button>
                 </div>
 
+                {/* Show any active discounts associated with this product */}
+                {(() => {
+                  const prodDiscounts = discounts.filter(
+                    d => d.isActive && (d.serviceId?._id === p._id || (!d.serviceId && d.isActive))
+                  );
+                  if (prodDiscounts.length === 0) return null;
+                  return (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {prodDiscounts.map(d => (
+                        <span 
+                          key={d._id} 
+                          className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        >
+                          <Tag className="w-2.5 h-2.5" />
+                          {d.code}: {d.type === 'percentage' ? `${d.value}% OFF` : `$${d.value} OFF`}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
+
                 {p.features && p.features.length > 0 && (
-                  <div className="mt-4 space-y-1.5">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slateGray">Features:</p>
+                  <div className="mt-4 space-y-2 pt-3 border-t border-softLavender">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-deepNavy">Features:</p>
                     {p.features.map((f, i) => (
-                      <div key={i} className="text-xs text-deepNavy/80 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                      <div key={i} className="text-xs text-slateGray flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span>{f}</span>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-
-              <div className="mt-5 pt-3 border-t border-softLavender flex items-center justify-between">
-                <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Active
-                </span>
-                <button
-                  onClick={() => handleDeletePlan(p._id, p.name)}
-                  className="p-1.5 text-slateGray hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                  title="Deactivate variant"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
               </div>
             </div>
           ))}
@@ -221,7 +259,7 @@ export default function ProductVariants() {
           </div>
           <h3 className="text-sm font-bold text-deepNavy">No Product Variants Recorded</h3>
           <p className="text-xs text-slateGray max-w-sm mt-1 mb-4">
-            Add regional editions, seat tiers, or packaging configurations to your database.
+            Add regional editions, seat tiers, or packaging configurations.
           </p>
           <button
             onClick={() => setShowModal(true)}
@@ -240,7 +278,7 @@ export default function ProductVariants() {
             <div className="flex items-center justify-between pb-3 border-b border-softLavender">
               <div>
                 <h3 className="text-base font-black text-deepNavy">Add Product Variant</h3>
-                <p className="text-xs text-slateGray">Persists directly into MongoDB `Service` collection.</p>
+                <p className="text-xs text-slateGray">Configure your product pricing and seat details.</p>
               </div>
               <button
                 onClick={() => setShowModal(false)}
@@ -256,7 +294,7 @@ export default function ProductVariants() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Enterprise Tier (US-East)"
+                  placeholder="e.g. Enterprise Tier"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 bg-mainBg border border-softLavender rounded-xl focus:outline-none focus:border-primary text-deepNavy"
@@ -334,4 +372,3 @@ export default function ProductVariants() {
     </div>
   );
 }
-

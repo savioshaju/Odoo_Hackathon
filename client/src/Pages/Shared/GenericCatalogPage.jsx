@@ -93,7 +93,7 @@ export default function GenericCatalogPage({
       );
 
       if (res.data?.success) {
-        toast.success(`${entityName} created successfully in database!`);
+        toast.success(`${entityName} created successfully!`);
         setShowModal(false);
         setFormData({
           name: '',
@@ -250,7 +250,7 @@ export default function GenericCatalogPage({
             </div>
             <h3 className="text-sm font-bold text-deepNavy">No {title} Recorded</h3>
             <p className="text-xs text-slateGray max-w-sm mt-1 mb-5">
-              There are no {title.toLowerCase()} in your database yet.
+              No {title.toLowerCase()} have been added yet.
             </p>
             {isPrivileged && (
               <button

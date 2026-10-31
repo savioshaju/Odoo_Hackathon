@@ -234,9 +234,6 @@ export default function Profile() {
               </span>
             </div>
             <p className="text-xs text-slateGray mt-0.5 break-all">{profileData.email}</p>
-            <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Email Verified via Nodemailer
-            </p>
           </div>
         </div>
 

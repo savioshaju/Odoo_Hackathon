@@ -14,6 +14,7 @@ import AdminHome from "../Pages/Admin/AdminHome";
 import CustomerDirectory from "../Pages/Admin/CustomerDirectory";
 import ProductVariants from "../Pages/Admin/ProductVariants";
 import AdminPayments from "../Pages/Admin/AdminPayments";
+import Discounts from "../Pages/Admin/Discounts";
 import RoleBasedRoute from "./RoleBasedRoute";
 
 const router = createBrowserRouter([
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
                 { path: 'customers', element: <CustomerDirectory /> },
                 { path: 'services', element: <ProductVariants /> },
                 { path: 'product-variants', element: <ProductVariants /> },
+                { path: 'discounts', element: <Discounts /> },
                 { path: 'payments', element: <AdminPayments /> },
               ]
             }
