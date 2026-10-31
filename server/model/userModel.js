@@ -22,7 +22,10 @@ const userSchema = mongoose.Schema(
         },
 
         phone: {
-            type: String
+            type: String,
+            required: true,
+            unique: true,
+            trim: true
         },
 
         role: {

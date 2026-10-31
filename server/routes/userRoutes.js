@@ -1,5 +1,17 @@
 const express = require('express')
-const { userSignup, userLogin, userLogout, getUserProfile, updateUserProfile, deleteUserAccount, changeUserPassword, forgotUserPassword, resetUserPassword } = require('../controller/userController')
+const { 
+    userSignup, 
+    verifySignupOTP, 
+    resendSignupOTP, 
+    userLogin, 
+    userLogout, 
+    getUserProfile, 
+    updateUserProfile, 
+    deleteUserAccount, 
+    changeUserPassword, 
+    forgotUserPassword, 
+    resetUserPassword 
+} = require('../controller/userController')
 const router = express.Router() 
 
 router.use((req, res, next) => {
@@ -9,6 +21,8 @@ router.use((req, res, next) => {
 
 // Authentication
 router.post('/signup', userSignup)
+router.post('/verify-otp', verifySignupOTP)
+router.post('/resend-otp', resendSignupOTP)
 router.post('/login', userLogin)
 router.post('/logout', userLogout)
 
@@ -23,7 +37,6 @@ router.post('/forgot-password', forgotUserPassword)
 router.post('/reset-password', resetUserPassword)
 
 // User Management
-
 // router.get('/')
 // router.get('/:id')
 // router.put('/:id')

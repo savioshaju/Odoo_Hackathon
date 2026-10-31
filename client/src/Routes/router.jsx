@@ -5,6 +5,7 @@ import Errorpage from "../Pages/Shared/Errorpage";
 import Home from "../Pages/User/Home";
 import Login from "../Pages/User/Login";
 import Signup from "../Pages/User/Signup";
+import Dashboard from "../Pages/User/Dashboard";
 import AdminHome from "../Pages/Admin/AdminHome";
 
 const router = createBrowserRouter([
@@ -18,14 +19,20 @@ const router = createBrowserRouter([
                 element: <Home />
             },
             {
-                path: 'login',
-                element: <Login />
-            },
-            {
-                path: 'signup',
-                element: <Signup />
+                path: 'dashboard',
+                element: <Dashboard />
             }
         ]
+    },
+    {
+        path: '/login',
+        element: <Login />,
+        errorElement: <Errorpage />
+    },
+    {
+        path: '/signup',
+        element: <Signup />,
+        errorElement: <Errorpage />
     },
     {
         path: 'admin',
