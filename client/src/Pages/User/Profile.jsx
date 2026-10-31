@@ -76,8 +76,13 @@ export default function Profile() {
   const fetchProfile = async () => {
     try {
       if (!currentUser?.email) setLoading(true);
-      const res = await axiosInstance.get('/users/profile');
-      const u = res.data?.user || res.data?.data || res.data;
+      const isAdmin = currentUser?.role === 'admin';
+      const endpoint = isAdmin ? '/admin/profile' : '/users/profile';
+      const res = await axiosInstance.get(endpoint)
+        .catch(() => axiosInstance.get('/users/profile'))
+        .catch(() => axiosInstance.get('/admin/profile'))
+        .catch(() => null);
+      const u = res?.data?.admin || res?.data?.user || res?.data?.data || res?.data;
       if (u && (u.email || u.name)) {
         setProfileData({
           name: u.name || '',
@@ -94,7 +99,7 @@ export default function Profile() {
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
-      if (err.response?.status === 401 || err.response?.status === 403) {
+      if (err.response?.status === 401 && !currentUser?.email) {
         toast.error('Session expired. Please log in.');
         dispatch(clearUserData());
         navigate('/login');
@@ -124,10 +129,15 @@ export default function Profile() {
 
     setSavingProfile(true);
     try {
-      const res = await axiosInstance.put('/users/profile', {
+      const isAdmin = currentUser?.role === 'admin' || profileData.role === 'admin';
+      const endpoint = isAdmin ? '/admin/profile' : '/users/profile';
+      const res = await axiosInstance.put(endpoint, {
         name: editForm.name.trim(),
         phone: editForm.phone.trim(),
-      });
+      }).catch(() => axiosInstance.put('/users/profile', {
+        name: editForm.name.trim(),
+        phone: editForm.phone.trim(),
+      }));
 
       if (res.data?.success) {
         toast.success(res.data.message || 'Profile updated successfully!');
@@ -166,11 +176,17 @@ export default function Profile() {
 
     setChangingPassword(true);
     try {
-      const res = await axiosInstance.put('/users/change-password', {
+      const isAdmin = currentUser?.role === 'admin' || profileData.role === 'admin';
+      const endpoint = isAdmin ? '/admin/change-password' : '/users/change-password';
+      const res = await axiosInstance.put(endpoint, {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
         confirmPassword: passwordForm.confirmPassword,
-      });
+      }).catch(() => axiosInstance.put('/users/change-password', {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+        confirmPassword: passwordForm.confirmPassword,
+      }));
 
       if (res.data?.success) {
         toast.success('Password changed successfully!');

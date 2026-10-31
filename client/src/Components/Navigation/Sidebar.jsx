@@ -46,7 +46,7 @@ export default function Sidebar({
 
   const handleLogout = async () => {
     try {
-      await axiosInstance.post('/users/logout');
+      await axiosInstance.post(user?.role === 'admin' ? '/admin/logout' : '/users/logout').catch(() => axiosInstance.post('/users/logout'));
     } catch (err) {
       console.warn('Logout error:', err);
     } finally {
