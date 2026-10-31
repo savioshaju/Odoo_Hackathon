@@ -3,7 +3,7 @@ const { adminSignup, adminLogin, adminLogout, getAdminProfile, updateAdminProfil
 const router = express.Router() 
 
 router.use((req, res, next) => {
-    console.log('Routes: user')
+    console.log('Routes: Admin')
     next()
 })
 
