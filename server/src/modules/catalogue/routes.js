@@ -204,6 +204,27 @@ export function createCatalogueRouter(db) {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
+  // TAXES (GST Rules: Admin-defined rules, round per line, CGST=SGST, IGST=both)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // GET /api/catalogue/taxes
+  router.get('/taxes', async (_req, res) => {
+    const taxes = await db.rows('catalogue_tax_list');
+    res.json(taxes);
+  });
+
+  // POST /api/catalogue/taxes
+  router.post('/taxes', async (req, res) => {
+    requireAdmin(req);
+    const { name, rate_bp, is_default = false } = req.body;
+    if (!name || rate_bp == null) {
+      throw badRequest('invalid_tax', 'Tax name and rate_bp are required');
+    }
+    const tax = await db.one('catalogue_tax_insert', [name, rate_bp, is_default]);
+    res.status(201).json(tax);
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
   // FINANCE DASHBOARD (Owner: Kishan)
   // Metrics: Active, Invoiced, Collected, Outstanding, Overdue, and MRR
   // ───────────────────────────────────────────────────────────────────────────

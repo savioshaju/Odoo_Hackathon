@@ -350,6 +350,14 @@ CREATE TABLE IF NOT EXISTS catalogue.discount_products (
   PRIMARY KEY (discount_id, product_id)
 );
 
+CREATE TABLE IF NOT EXISTS catalogue.taxes (
+  id          bigserial PRIMARY KEY,
+  name        text    NOT NULL,
+  rate_bp     int     NOT NULL CHECK (rate_bp >= 0 AND rate_bp <= 10000),
+  is_default  boolean NOT NULL DEFAULT false,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
 
 -- @@PART 3: QUERIES
 -- =============================================================================
@@ -416,6 +424,7 @@ DELETE FROM catalogue.discounts;
 DELETE FROM catalogue.product_variants;
 DELETE FROM catalogue.plans;
 DELETE FROM catalogue.products;
+DELETE FROM catalogue.taxes;
 SELECT setval(c.oid::regclass, 1, false)
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE c.relkind = 'S' AND n.nspname IN ('billing', 'standin', 'catalogue');
@@ -523,6 +532,16 @@ SET used_count = GREATEST(0, used_count - 1)
 WHERE id = $1
 RETURNING *;
 
+-- name: catalogue_tax_list
+SELECT id, name, rate_bp, is_default, (rate_bp / 100.0)::numeric AS rate_percent
+FROM catalogue.taxes
+ORDER BY rate_bp DESC;
+
+-- name: catalogue_tax_insert
+INSERT INTO catalogue.taxes (name, rate_bp, is_default)
+VALUES ($1, $2, $3)
+RETURNING *;
+
 -- -----------------------------------------------------------------------------
 -- Finance Dashboard Queries (Owner: Kishan)
 -- -----------------------------------------------------------------------------
@@ -581,8 +600,16 @@ DELETE FROM catalogue.discounts;
 DELETE FROM catalogue.product_variants;
 DELETE FROM catalogue.plans;
 DELETE FROM catalogue.products;
+DELETE FROM catalogue.taxes;
 
 -- name: seed_insert_catalogue_defaults
+INSERT INTO catalogue.taxes (name, rate_bp, is_default)
+VALUES
+  ('GST Standard (18%)', 1800, true),
+  ('GST Reduced (12%)', 1200, false),
+  ('GST Low (5%)', 500, false),
+  ('GST Exempt (0%)', 0, false);
+
 INSERT INTO catalogue.products (id, name, kind, sales_price, cost_price, tax_rate_bp, notes)
 VALUES
   (1, 'Brightloop CRM', 'service', 200000, 80000, 1800, 'Core CRM platform'),
