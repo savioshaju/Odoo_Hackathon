@@ -154,7 +154,7 @@ async function updateAdminProfile(req, res, next) {
         const updatedAdmin = await User.findByIdAndUpdate(
             adminId,
             { $set: updates },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         ).select('-password')
 
         if (!updatedAdmin) {
@@ -183,7 +183,7 @@ async function deleteAdminAccount(req, res, next) {
         const admin = await User.findByIdAndUpdate(
             adminId,
             { $set: { isActive: false } },
-            { new: true }
+            { returnDocument: 'after' }
         )
 
         if (!admin) {
