@@ -38,12 +38,3 @@ app.listen(port, (err) => {
         console.log('Server running at port', port)
     }
 })
-
-
-app.listen(port, (err) => {
-    if (err) {
-        console.log('err :>> ', err);
-    } else {
-        console.log('Server running at port', port)
-    }
-})
