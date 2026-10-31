@@ -5,12 +5,12 @@ const { Company } = require('../model/companyModel');
 // POST / - Create a new service
 async function createService(req, res, next) {
     try {
-        const { name, companyId, description, features, isActive } = req.body;
+        const { name, companyId, description, features, price, duration, isActive } = req.body;
 
-        if (!name || !companyId || !description) {
+        if (!name || !companyId || !description || price === undefined || duration === undefined) {
             return res.status(400).json({
                 success: false,
-                message: 'Name, companyId, and description are required'
+                message: 'Name, companyId, description, price, and duration are required'
             });
         }
 
@@ -34,6 +34,8 @@ async function createService(req, res, next) {
             companyId,
             description: description.trim(),
             features: Array.isArray(features) ? features : [],
+            price: String(price).trim(),
+            duration: Number(duration),
             isActive: isActive !== undefined ? Boolean(isActive) : true
         });
 
@@ -156,12 +158,14 @@ async function updateService(req, res, next) {
             });
         }
 
-        const { name, description, features, isActive, companyId } = req.body;
+        const { name, description, features, price, duration, isActive, companyId } = req.body;
         const updates = {};
 
         if (name !== undefined) updates.name = name.trim();
         if (description !== undefined) updates.description = description.trim();
         if (features !== undefined) updates.features = Array.isArray(features) ? features : [];
+        if (price !== undefined) updates.price = String(price).trim();
+        if (duration !== undefined) updates.duration = Number(duration);
         if (isActive !== undefined) updates.isActive = Boolean(isActive);
 
         if (companyId) {
