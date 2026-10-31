@@ -4,6 +4,9 @@ const cookieParser = require('cookie-parser')
 const dotenv = require('dotenv')
 const { connectDB } = require('./config/db')
 const { apiRouter } = require('./routes')
+const dns = require('dns')
+
+dns.setServers(['1.1.1.1', '8.8.8.8'])
 
 dotenv.config()
 const app = express()
