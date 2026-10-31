@@ -1,28 +1,33 @@
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'node:url';
-import { createApp } from './src/app.js';
-import { db } from './src/db.js';
+const express = require('express')
+const cors = require('cors')
+const dotenv = require('dotenv')
+const { connectDB } = require('./config/db')
+const { apiRouter } = require('./routes')
 
-dotenv.config();
 
-export * from './src/app.js';
+dotenv.config()
+const app = express()
+const port = 3000
 
-// If executed directly (e.g., node app.js or nodemon app.js)
-const isMainModule = process.argv[1] && (
-  fileURLToPath(import.meta.url) === process.argv[1] ||
-  process.argv[1].endsWith('app.js')
-);
+connectDB()
 
-if (isMainModule) {
-  const app = createApp({ db });
-  app.use(cors());
-  const port = process.env.PORT || 4000;
-  app.listen(port, (err) => {
+app.listen(port, (err) => {
     if (err) {
-      console.log('err :>> ', err);
+        console.log('err :>> ', err);
     } else {
-      console.log('Server running at port', port);
+        console.log('Server running at port', port)
     }
-  });
-}
+})
+
+
+app.use((req, res, next) => {
+    console.log('\nreq.method :>> ', req.method);
+    console.log('req.path :>> ', req.path);
+    next()
+})
+
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'Hello World' })
+})
+
+app.use('/api', apiRouter)
