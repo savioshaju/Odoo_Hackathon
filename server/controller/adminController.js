@@ -1,3 +1,6 @@
+const { User } = require("../model/userModel")
+
+
 async function adminSignup(req, res, next) { }
 
 async function adminLogin(req, res, next) { }
