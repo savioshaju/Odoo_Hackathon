@@ -1,4 +1,5 @@
-
+-- @@PART 1: BILLING SCHEMA
+-- =============================================================================
 
 CREATE SCHEMA IF NOT EXISTS billing;
 
@@ -287,7 +288,71 @@ CREATE TABLE IF NOT EXISTS standin.discount_products (
 );
 
 
+-- =============================================================================
+-- CATALOGUE SCHEMA (Owner: Kishan)
+-- Real tables for products, variants, plans, and discounts
+-- =============================================================================
 
+CREATE SCHEMA IF NOT EXISTS catalogue;
+
+CREATE TABLE IF NOT EXISTS catalogue.products (
+  id          bigserial PRIMARY KEY,
+  name        text   NOT NULL,
+  kind        text   NOT NULL DEFAULT 'service',
+  sales_price bigint NOT NULL CHECK (sales_price >= 0),   -- paise, base price
+  cost_price  bigint NOT NULL DEFAULT 0,
+  tax_rate_bp int    NOT NULL DEFAULT 1800,               -- basis points (1800 = 18%)
+  notes       text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS catalogue.product_variants (
+  id          bigserial PRIMARY KEY,
+  product_id  bigint NOT NULL REFERENCES catalogue.products (id) ON DELETE CASCADE,
+  name        text   NOT NULL,                            -- e.g. 'Odoo Brand Edition'
+  price_addon bigint NOT NULL DEFAULT 0,                  -- paise, e.g. 56000 = ₹560.00
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS product_variants_product_idx ON catalogue.product_variants (product_id);
+
+CREATE TABLE IF NOT EXISTS catalogue.plans (
+  id             bigserial PRIMARY KEY,
+  name           text    NOT NULL,
+  frequency      text    NOT NULL CHECK (frequency IN ('daily', 'weekly', 'monthly', 'yearly')),
+  price          bigint  NOT NULL DEFAULT 0,              -- paise
+  min_quantity   int     NOT NULL DEFAULT 1,
+  available_from date,
+  available_to   date,
+  auto_close     boolean NOT NULL DEFAULT false,
+  closable       boolean NOT NULL DEFAULT true,
+  pausable       boolean NOT NULL DEFAULT true,
+  renewable      boolean NOT NULL DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS catalogue.discounts (
+  id           bigserial PRIMARY KEY,
+  name         text   NOT NULL,
+  kind         text   NOT NULL CHECK (kind IN ('percent', 'fixed')),
+  value        bigint NOT NULL CHECK (value > 0),         -- basis points (1000 = 10%) or paise
+  scope        text   NOT NULL CHECK (scope IN ('product', 'subscription')),
+  min_amount   bigint NOT NULL DEFAULT 0,
+  min_quantity int    NOT NULL DEFAULT 0,
+  start_date   date,
+  end_date     date,
+  usage_limit  int,
+  used_count   int    NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS catalogue.discount_products (
+  discount_id bigint NOT NULL REFERENCES catalogue.discounts (id) ON DELETE CASCADE,
+  product_id  bigint NOT NULL REFERENCES catalogue.products (id) ON DELETE CASCADE,
+  PRIMARY KEY (discount_id, product_id)
+);
+
+
+-- @@PART 3: QUERIES
+-- =============================================================================
 
 -- name: db_ping
 SELECT 1 AS ok;
@@ -319,16 +384,18 @@ INSERT INTO billing.outbox (kind, to_email, subject, body, invoice_id)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING id;
 
-
+-- name: admin_database_exists
 SELECT 1 AS present FROM pg_database WHERE datname = $1;
 
+-- name: admin_create_database_sql
 SELECT format('CREATE DATABASE %I', $1::text) AS statement;
 
 -- name: admin_reset_schemas
 DROP SCHEMA IF EXISTS billing CASCADE;
 DROP SCHEMA IF EXISTS standin CASCADE;
+DROP SCHEMA IF EXISTS catalogue CASCADE;
 
-
+-- name: test_reset
 DELETE FROM billing.payments;
 DELETE FROM billing.invoice_discounts;
 DELETE FROM billing.invoice_lines;
@@ -344,10 +411,16 @@ DELETE FROM standin.subscriptions;
 DELETE FROM standin.plans;
 DELETE FROM standin.products;
 DELETE FROM standin.customers;
+DELETE FROM catalogue.discount_products;
+DELETE FROM catalogue.discounts;
+DELETE FROM catalogue.product_variants;
+DELETE FROM catalogue.plans;
+DELETE FROM catalogue.products;
 SELECT setval(c.oid::regclass, 1, false)
 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-WHERE c.relkind = 'S' AND n.nspname IN ('billing', 'standin');
+WHERE c.relkind = 'S' AND n.nspname IN ('billing', 'standin', 'catalogue');
 
+-- name: test_insert_invoice
 INSERT INTO billing.invoices (
   number_seq, number, subscription_id, period_start, period_end, customer_id, customer_snapshot, status,
   invoice_date, due_date, supply, gross_total, line_discount_total, sub_discount_total, taxable_total,
@@ -357,7 +430,7 @@ VALUES (
   $3::date, ($3::date + 15), $14, $5, $6, $7, $8, $9, $10, $11, $12, $13, '[]'::jsonb)
 RETURNING id;
 
-
+-- name: test_insert_line
 INSERT INTO billing.invoice_lines (
   invoice_id, line_no, product_id, description, quantity, unit_price, tax_rate_bp,
   gross, line_discount, sub_discount, taxable, cgst, sgst, igst, total)
@@ -377,3 +450,75 @@ SELECT billing.period_start($1::date, $2::text, $3::int) AS d;
 
 -- name: test_last_period_no
 SELECT billing.last_period_no($1::date, $2::text, $3::date) AS n;
+
+-- -----------------------------------------------------------------------------
+-- Catalogue Queries (Owner: Kishan)
+-- -----------------------------------------------------------------------------
+
+-- name: catalogue_product_list
+SELECT p.id, p.name, p.kind, p.sales_price, p.cost_price, p.tax_rate_bp, p.notes,
+       COALESCE(json_agg(
+         json_build_object(
+           'id', v.id,
+           'name', v.name,
+           'price_addon', v.price_addon,
+           'total_price', p.sales_price + v.price_addon
+         ) ORDER BY v.id
+       ) FILTER (WHERE v.id IS NOT NULL), '[]'::json) AS variants
+FROM catalogue.products p
+LEFT JOIN catalogue.product_variants v ON v.product_id = p.id
+GROUP BY p.id
+ORDER BY p.id;
+
+-- name: catalogue_product_get
+SELECT p.id, p.name, p.kind, p.sales_price, p.cost_price, p.tax_rate_bp, p.notes,
+       COALESCE(json_agg(
+         json_build_object(
+           'id', v.id,
+           'name', v.name,
+           'price_addon', v.price_addon,
+           'total_price', p.sales_price + v.price_addon
+         ) ORDER BY v.id
+       ) FILTER (WHERE v.id IS NOT NULL), '[]'::json) AS variants
+FROM catalogue.products p
+LEFT JOIN catalogue.product_variants v ON v.product_id = p.id
+WHERE p.id = $1
+GROUP BY p.id;
+
+-- name: catalogue_product_insert
+INSERT INTO catalogue.products (name, kind, sales_price, cost_price, tax_rate_bp, notes)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING *;
+
+-- name: catalogue_variant_insert
+INSERT INTO catalogue.product_variants (product_id, name, price_addon)
+VALUES ($1, $2, $3)
+RETURNING *;
+
+-- name: catalogue_plan_list
+SELECT * FROM catalogue.plans ORDER BY id;
+
+-- name: catalogue_plan_insert
+INSERT INTO catalogue.plans (name, frequency, price, min_quantity, available_from, available_to, auto_close, closable, pausable, renewable)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING *;
+
+-- name: catalogue_discount_list
+SELECT * FROM catalogue.discounts ORDER BY id;
+
+-- name: catalogue_discount_insert
+INSERT INTO catalogue.discounts (name, kind, value, scope, min_amount, min_quantity, start_date, end_date, usage_limit)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING *;
+
+-- name: catalogue_discount_claim
+UPDATE catalogue.discounts
+SET used_count = used_count + 1
+WHERE id = $1 AND (usage_limit IS NULL OR used_count < usage_limit)
+RETURNING *;
+
+-- name: catalogue_discount_release
+UPDATE catalogue.discounts
+SET used_count = GREATEST(0, used_count - 1)
+WHERE id = $1
+RETURNING *;

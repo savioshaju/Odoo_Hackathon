@@ -8,6 +8,7 @@
     "dev": "node --watch --watch-path=./src --watch-path=../query.sql src/index.js",
     "start": "node src/index.js",
     "test": "vitest run",
+    "test:kishan": "vitest run tests/catalogue",
     "test:engine": "vitest run tests/engine"
   },
   "dependencies": {

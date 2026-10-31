@@ -2,6 +2,7 @@ import express from 'express';
 import { db as defaultDb } from './db.js';
 import { HttpError } from './errors.js';
 import { createBillingRouter } from './modules/billing/routes.js';
+import { createCatalogueRouter } from './modules/catalogue/routes.js';
 import { demoAuth } from './modules/billing/standins/auth.js';
 
 export function createApp({ db = defaultDb } = {}) {
@@ -26,6 +27,7 @@ export function createApp({ db = defaultDb } = {}) {
   });
 
   app.use('/api/billing', demoAuth, createBillingRouter(db));
+  app.use('/api/catalogue', demoAuth, createCatalogueRouter(db));
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: { code: 'not_found', message: 'No such endpoint' } });
