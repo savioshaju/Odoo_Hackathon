@@ -16,6 +16,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   LogOut, 
+  LogIn,
   User as UserIcon,
   ShieldCheck
 } from 'lucide-react';
@@ -31,7 +32,6 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
 
   const userRole = user?.role || 'user';
-  const isPrivileged = userRole === 'admin' || userRole === 'staff';
 
   const handleLogout = async () => {
     try {
@@ -107,7 +107,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           </button>
         </div>
 
-        {/* Navigation Items (Filtered dynamically based on user role) */}
+        {/* Navigation Items */}
         <div className="py-4 px-3 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
           {navGroups.map((group, gIdx) => {
             const visibleItems = group.items.filter(item => item.roles.includes(userRole));
@@ -145,49 +145,70 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         </div>
       </div>
 
-      {/* Bottom User Profile Section */}
+      {/* Bottom Section: Actual Logged-In User Profile OR Login Prompt */}
       <div className="p-3 border-t border-softLavender bg-white">
-        {!collapsed ? (
-          <div className="p-2.5 rounded-xl bg-mainBg border border-softLavender flex items-center justify-between">
-            <NavLink to="/profile" className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs shrink-0">
-                {user?.name ? user.name[0] : 'U'}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-bold text-deepNavy truncate">{user?.name || 'Account'}</p>
-                  <span className="px-1.5 py-0.2 bg-primary/10 text-primary rounded text-[9px] font-bold uppercase">
-                    {userRole}
-                  </span>
+        {user ? (
+          !collapsed ? (
+            <div className="p-2.5 rounded-xl bg-mainBg border border-softLavender flex items-center justify-between">
+              <NavLink to="/profile" className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs shrink-0">
+                  {user.name ? user.name[0] : 'U'}
                 </div>
-                <p className="text-[11px] text-slateGray truncate">{user?.email}</p>
-              </div>
-            </NavLink>
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              className="p-1.5 text-slateGray hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-deepNavy truncate">{user.name}</p>
+                    <span className="px-1.5 py-0.2 bg-primary/10 text-primary rounded text-[9px] font-bold uppercase">
+                      {userRole}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slateGray truncate">{user.email}</p>
+                </div>
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="p-1.5 text-slateGray hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              <NavLink 
+                to="/profile" 
+                className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs hover:opacity-90 transition"
+                title={`${user.name} (${userRole})`}
+              >
+                {user.name ? user.name[0] : 'U'}
+              </NavLink>
+              <button
+                onClick={handleLogout}
+                title="Logout"
+                className="p-2 text-slateGray hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <NavLink 
-              to="/profile" 
-              className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs hover:opacity-90 transition"
-              title={`${user?.name || 'Profile'} (${userRole})`}
+          /* When NOT logged in: Show clean Log In button instead of mock account */
+          !collapsed ? (
+            <NavLink
+              to="/login"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-xs transition"
             >
-              {user?.name ? user.name[0] : 'U'}
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Log in to Brightloop</span>
             </NavLink>
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              className="p-2 text-slateGray hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+          ) : (
+            <NavLink
+              to="/login"
+              className="w-9 h-9 mx-auto flex items-center justify-center rounded-xl bg-primary text-white hover:bg-primary-dark transition"
+              title="Log in"
             >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
+              <LogIn className="w-4 h-4" />
+            </NavLink>
+          )
         )}
       </div>
     </aside>

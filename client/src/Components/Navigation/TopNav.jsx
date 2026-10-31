@@ -8,7 +8,8 @@ import {
   Moon, 
   Sun, 
   ChevronDown, 
-  Sparkles,
+  LogIn,
+  UserPlus,
   Command,
   CheckCircle2
 } from 'lucide-react';
@@ -69,7 +70,7 @@ export default function TopNav({ onToggleMobileMenu }) {
 
         {/* Modern Breadcrumb */}
         <nav className="flex items-center text-xs font-medium text-slateGray">
-          <Link to="/dashboard" className="hover:text-primary transition">Brightloop</Link>
+          <Link to="/" className="hover:text-primary transition">Brightloop</Link>
           <span className="mx-2 text-softLavender">/</span>
           <span className="text-deepNavy font-semibold">{currentPageTitle}</span>
         </nav>
@@ -82,7 +83,7 @@ export default function TopNav({ onToggleMobileMenu }) {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search subscriptions, customers, invoices..."
+          placeholder="Search subscriptions, catalog..."
           className="w-full pl-9 pr-9 py-2 bg-mainBg border border-softLavender rounded-xl text-xs text-deepNavy placeholder-slateGray/70 focus:outline-none focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/10 transition"
         />
         <div className="absolute right-2.5 flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-softLavender rounded text-[10px] text-slateGray font-mono font-bold">
@@ -101,86 +102,98 @@ export default function TopNav({ onToggleMobileMenu }) {
           {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="p-2 text-slateGray hover:text-deepNavy rounded-xl hover:bg-mainBg border border-transparent hover:border-softLavender transition cursor-pointer relative"
-          >
-            <Bell className="w-4 h-4" />
-            
-          </button>
+        {/* Notifications (Only shown when logged in) */}
+        {user && (
+          <div className="relative">
+            <button
+              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              className="p-2 text-slateGray hover:text-deepNavy rounded-xl hover:bg-mainBg border border-transparent hover:border-softLavender transition cursor-pointer relative"
+            >
+              <Bell className="w-4 h-4" />
+            </button>
 
-          {notificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-softLavender p-4 z-50 animate-fadeIn">
-              <div className="flex items-center justify-between pb-3 border-b border-softLavender">
-                <span className="text-xs font-bold text-deepNavy uppercase tracking-wider">Notifications</span>
-                <span className="text-[11px] font-semibold text-primary cursor-pointer hover:underline">Mark all read</span>
-              </div>
-              <div className="py-2 space-y-2 text-xs">
-                <div className="p-2.5 bg-mainBg rounded-xl flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-deepNavy">Recurring run completed</p>
-                    <p className="text-[11px] text-slateGray">No recent system billing activity</p>
-                    <span className="text-[10px] text-slateGray/70 mt-1 block">5 mins ago</span>
-                  </div>
+            {notificationsOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-softLavender p-4 z-50 animate-fadeIn">
+                <div className="flex items-center justify-between pb-3 border-b border-softLavender">
+                  <span className="text-xs font-bold text-deepNavy uppercase tracking-wider">Notifications</span>
+                </div>
+                <div className="py-6 text-center text-xs text-slateGray">
+                  <p className="font-semibold text-deepNavy">No new notifications</p>
+                  <p className="text-[11px] text-slateGray mt-0.5">System updates will appear here</p>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
-        {/* User Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-1.5 pl-2 rounded-xl hover:bg-mainBg border border-transparent hover:border-softLavender transition cursor-pointer"
-          >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-              {user?.name ? user.name[0] : 'U'}
-            </div>
-            <span className="hidden sm:inline text-xs font-bold text-deepNavy max-w-[100px] truncate">
-              {user?.name || 'Account'}
-            </span>
-            <ChevronDown className="w-3.5 h-3.5 text-slateGray" />
-          </button>
+        {/* User Account vs. Logged Out Login/Signup Buttons */}
+        {user ? (
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-2 p-1.5 pl-2 rounded-xl hover:bg-mainBg border border-transparent hover:border-softLavender transition cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                {user.name ? user.name[0] : 'U'}
+              </div>
+              <span className="hidden sm:inline text-xs font-bold text-deepNavy max-w-[110px] truncate">
+                {user.name}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slateGray" />
+            </button>
 
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-softLavender p-2 z-50 animate-fadeIn">
-              <div className="px-3 py-2 border-b border-softLavender">
-                <p className="text-xs font-bold text-deepNavy">{user?.name || 'Brightloop User'}</p>
-                <p className="text-[11px] text-slateGray truncate">{user?.email || ''}</p>
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-softLavender p-2 z-50 animate-fadeIn">
+                <div className="px-3 py-2 border-b border-softLavender">
+                  <p className="text-xs font-bold text-deepNavy">{user.name}</p>
+                  <p className="text-[11px] text-slateGray truncate">{user.email}</p>
+                </div>
+                <div className="py-1 text-xs">
+                  <Link
+                    to="/profile"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-3 py-2 text-slateGray hover:text-deepNavy hover:bg-mainBg rounded-lg font-medium transition"
+                  >
+                    My Profile
+                  </Link>
+                  <Link
+                    to="/subscriptions"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-3 py-2 text-slateGray hover:text-deepNavy hover:bg-mainBg rounded-lg font-medium transition"
+                  >
+                    My Subscriptions
+                  </Link>
+                </div>
+                <div className="pt-1 border-t border-softLavender">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
+                </div>
               </div>
-              <div className="py-1 text-xs">
-                <Link
-                  to="/profile"
-                  onClick={() => setDropdownOpen(false)}
-                  className="block px-3 py-2 text-slateGray hover:text-deepNavy hover:bg-mainBg rounded-lg font-medium transition"
-                >
-                  My Profile
-                </Link>
-                <Link
-                  to="/settings"
-                  onClick={() => setDropdownOpen(false)}
-                  className="block px-3 py-2 text-slateGray hover:text-deepNavy hover:bg-mainBg rounded-lg font-medium transition"
-                >
-                  Workspace Settings
-                </Link>
-              </div>
-              <div className="pt-1 border-t border-softLavender">
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-deepNavy hover:text-primary hover:bg-mainBg rounded-xl transition"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Log in</span>
+            </Link>
+            <Link
+              to="/signup"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary rounded-xl shadow-xs transition"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Sign up</span>
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );
 }
-
