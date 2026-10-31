@@ -13,6 +13,7 @@ router.use((req, res, next) => {
 })
 
 router.use('/users', userRouter)
+router.use('/company')
 // router.use('/admin', adminRouter)
 // router.use('/staff', staffRouter)
 // router.use('/subscriptions')

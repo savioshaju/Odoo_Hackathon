@@ -1,4 +1,5 @@
 const express = require('express')
+const { adminSignup, adminLogin, adminLogout, getAdminProfile, updateAdminProfile, deleteAdminAccount, changeAdminPassword, forgotAdminPassword, resetAdminPassword } = require('../controller/adminController')
 const router = express.Router() 
 
 router.use((req, res, next) => {
@@ -7,19 +8,19 @@ router.use((req, res, next) => {
 })
 
 // Authentication
-router.post('/register')
-router.post('/login')
-router.post('/logout')
+router.post('/signup', adminSignup)
+router.post('/login', adminLogin)
+router.post('/logout', adminLogout)
 
 // Profile
-router.get('/profile')
-router.put('/profile')
-router.delete('/account')
+router.get('/profile', getAdminProfile)
+router.put('/profile', updateAdminProfile)
+router.delete('/account', deleteAdminAccount)
 
 // Password Management
-router.put('/change-password')
-router.post('/forgot-password')
-router.post('/reset-password')
+router.put('/change-password', changeAdminPassword)
+router.post('/forgot-password', forgotAdminPassword)
+router.post('/reset-password', resetAdminPassword)
 
 // User Management
 router.get('/')
