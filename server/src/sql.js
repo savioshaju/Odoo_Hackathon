@@ -1,7 +1,4 @@
-// Loads query.sql (the one and only home of database code) and serves it by name.
-//
-//   schemaSql()      PART 1 + PART 2, run by npm run db:setup
-//   queryText(name)  one named query from PART 3; an unknown name fails immediately
+
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';

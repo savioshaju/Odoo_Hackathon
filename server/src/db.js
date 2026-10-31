@@ -1,15 +1,4 @@
-// Database access. No SQL strings anywhere in JavaScript: everything is a named query from query.sql.
-//
-//   await db.rows('invoice_list', [..])      all rows
-//   await db.one('invoice_get', [id])        exactly one row, else throws
-//   await db.maybeOne('setting_get', [k])    one row or null
-//   await db.exec('setting_set', [k, v])     row count
-//   await db.tx(async (t) => { ... t.rows(..) ... })   one transaction; t has the same methods
-//
-// Reading values safely:
-//   DATE   -> 'YYYY-MM-DD' string (never a JS Date, so time zones cannot shift a day)
-//   BIGINT -> number (paise always fit; throws instead of silently losing digits)
-//   NUMERIC-> number
+
 
 import pg from 'pg';
 import { config } from './config.js';
@@ -64,12 +53,7 @@ pool.on('error', (err) => {
 
 const base = wrap(pool);
 
-/**
- * Runs fn inside one transaction.
- *  - commits when fn returns, rolls back when it throws
- *  - { rollback: true } always rolls back and still returns fn's result (dry run: same code, nothing saved)
- *  - { snapshot: true } gives a consistent read-only view across several queries
- */
+
 async function tx(fn, { rollback = false, snapshot = false } = {}) {
   const client = await pool.connect();
   const conn = wrap(client);
