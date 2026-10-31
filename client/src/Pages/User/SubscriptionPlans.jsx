@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { 
   Check, 
@@ -8,7 +8,8 @@ import {
   Zap, 
   ArrowRight,
   Layers,
-  Crown
+  Crown,
+  Inbox
 } from 'lucide-react';
 import axiosInstance from '../../Config/axiosInstance';
 import { toast } from 'react-toastify';
@@ -30,7 +31,7 @@ export default function SubscriptionPlans() {
           setPlans(res.data.plans || []);
         }
       } catch (err) {
-        console.error('Failed to load plans:', err);
+        console.error('Failed to load database plans:', err);
       } finally {
         setLoading(false);
       }
@@ -38,17 +39,17 @@ export default function SubscriptionPlans() {
     fetchPlans();
   }, []);
 
-  const handleSubscribe = async (planId, planName) => {
+  const handleSubscribe = async (planIdentifier, planName) => {
     if (!currentUser) {
       toast.info('Please log in to choose a subscription plan');
       navigate('/login');
       return;
     }
 
-    setSubscribingId(planId);
+    setSubscribingId(planIdentifier);
     try {
       const res = await axiosInstance.post('/subscriptions/subscribe', {
-        planId,
+        planId: planIdentifier,
         billingCycle
       });
 
@@ -71,60 +72,63 @@ export default function SubscriptionPlans() {
       {/* Header */}
       <div className="text-center max-w-2xl mx-auto">
         <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20 inline-flex items-center gap-1.5 mb-3">
-          <Crown className="w-3.5 h-3.5" /> Transparent SaaS Pricing
+          <Crown className="w-3.5 h-3.5" /> Database Plans Catalog
         </span>
         <h1 className="text-3xl sm:text-4xl font-black text-deepNavy tracking-tight">
-          Flexible Plans for Teams of Every Scale
+          Subscription Tiers
         </h1>
         <p className="text-xs sm:text-sm text-slateGray mt-2">
-          Unlock high-velocity billing cycles, direct payment integrations, and automated compliance.
+          Plans retrieved directly from the database for your Brightloop portal.
         </p>
 
         {/* Billing cycle toggle */}
-        <div className="mt-6 inline-flex items-center p-1 bg-mainBg border border-softLavender rounded-2xl shadow-xs">
-          <button
-            onClick={() => setBillingCycle('monthly')}
-            className={`px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-              billingCycle === 'monthly'
-                ? 'bg-white text-deepNavy shadow-xs'
-                : 'text-slateGray hover:text-deepNavy'
-            }`}
-          >
-            Monthly Billing
-          </button>
-          <button
-            onClick={() => setBillingCycle('annual')}
-            className={`px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-              billingCycle === 'annual'
-                ? 'bg-primary text-white shadow-xs'
-                : 'text-slateGray hover:text-deepNavy'
-            }`}
-          >
-            <span>Annual Billing</span>
-            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-              billingCycle === 'annual' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'
-            }`}>
-              Save 20%
-            </span>
-          </button>
-        </div>
+        {plans.length > 0 && (
+          <div className="mt-6 inline-flex items-center p-1 bg-mainBg border border-softLavender rounded-2xl shadow-xs">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                billingCycle === 'monthly'
+                  ? 'bg-white text-deepNavy shadow-xs'
+                  : 'text-slateGray hover:text-deepNavy'
+              }`}
+            >
+              Monthly Billing
+            </button>
+            <button
+              onClick={() => setBillingCycle('annual')}
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                billingCycle === 'annual'
+                  ? 'bg-primary text-white shadow-xs'
+                  : 'text-slateGray hover:text-deepNavy'
+              }`}
+            >
+              <span>Annual Billing</span>
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                billingCycle === 'annual' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'
+              }`}>
+                Save 20%
+              </span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Plans Grid */}
       {loading ? (
         <div className="p-16 text-center">
           <div className="w-10 h-10 border-3 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-xs font-bold text-slateGray">Loading available subscription tiers...</p>
+          <p className="text-xs font-bold text-slateGray">Loading database subscription plans...</p>
         </div>
-      ) : (
+      ) : plans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           {plans.map((plan) => {
+            const planKey = plan._id || plan.planCode || plan.planId;
             const price = billingCycle === 'annual' ? plan.annualPrice : plan.monthlyPrice;
             const isPopular = plan.popular;
 
             return (
               <div
-                key={plan.planId}
+                key={planKey}
                 className={`bg-white rounded-3xl p-7 transition-all duration-300 relative flex flex-col justify-between ${
                   isPopular
                     ? 'border-2 border-primary shadow-glow-indigo shadow-lg scale-102 z-10'
@@ -158,28 +162,30 @@ export default function SubscriptionPlans() {
                   </div>
 
                   {/* Features list */}
-                  <div className="mt-6 space-y-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-deepNavy">
-                      What's Included:
-                    </p>
-                    <ul className="space-y-2.5 text-xs text-slateGray">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5">
-                          <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          </div>
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {plan.features && plan.features.length > 0 && (
+                    <div className="mt-6 space-y-3">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-deepNavy">
+                        Included Features:
+                      </p>
+                      <ul className="space-y-2.5 text-xs text-slateGray">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start gap-2.5">
+                            <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Subscribe CTA */}
                 <div className="mt-8 pt-4">
                   <button
-                    onClick={() => handleSubscribe(plan.planId, plan.name)}
-                    disabled={subscribingId === plan.planId}
+                    onClick={() => handleSubscribe(planKey, plan.name)}
+                    disabled={subscribingId === planKey}
                     className={`w-full py-3 px-4 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-md ${
                       isPopular
                         ? 'bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white shadow-primary/20'
@@ -187,8 +193,8 @@ export default function SubscriptionPlans() {
                     } disabled:opacity-50`}
                   >
                     <span>
-                      {subscribingId === plan.planId
-                        ? 'Activating Subscription...'
+                      {subscribingId === planKey
+                        ? 'Subscribing...'
                         : `Subscribe to ${plan.name}`}
                     </span>
                     <ArrowRight className="w-4 h-4" />
@@ -197,6 +203,25 @@ export default function SubscriptionPlans() {
               </div>
             );
           })}
+        </div>
+      ) : (
+        /* Empty State when zero plans in MongoDB */
+        <div className="bg-white rounded-3xl border border-softLavender p-10 sm:p-14 text-center shadow-premium">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 border border-primary/20">
+            <Inbox className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-deepNavy">No Subscription Plans Found in Database</h2>
+          <p className="text-xs sm:text-sm text-slateGray max-w-md mx-auto mt-2">
+            There are currently no active subscription plans stored in the database. When plans are added to MongoDB, they will automatically be displayed here.
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-3">
+            <Link
+              to="/dashboard"
+              className="px-5 py-2.5 bg-gradient-to-r from-primary to-secondary text-white font-bold text-xs rounded-xl shadow-xs transition"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
       )}
 
@@ -207,12 +232,9 @@ export default function SubscriptionPlans() {
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-deepNavy">14-Day Money Back Guarantee</h4>
-            <p className="text-[11px] text-slateGray mt-0.5">Cancel anytime with 1 click. Zero lock-in contracts.</p>
+            <h4 className="text-xs font-bold text-deepNavy">Enterprise-grade Security</h4>
+            <p className="text-[11px] text-slateGray mt-0.5">All billing and subscriptions are securely managed in database.</p>
           </div>
-        </div>
-        <div className="text-xs font-semibold text-primary">
-          Need custom volume? <a href="mailto:support@brightloop.io" className="underline font-bold">Contact Sales</a>
         </div>
       </div>
     </div>

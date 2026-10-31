@@ -1,19 +1,17 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ShieldAlert } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 /**
- * RoleBasedRoute: Restricts frontend access to specified roles
- * Usage: <RoleBasedRoute allowedRoles={['admin', 'staff']} />
+ * RoleBasedRoute: Restricts frontend access to authenticated users with specified roles
+ * Usage: <RoleBasedRoute allowedRoles={['user', 'admin']} />
  */
 export default function RoleBasedRoute({ allowedRoles = [] }) {
   const user = useSelector((state) => state.user?.userData);
-  const token = localStorage.getItem('token');
 
-  // If not logged in at all, redirect to login
-  if (!user && !token) {
+  // If not logged in, block access and redirect immediately to login
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -28,7 +26,7 @@ export default function RoleBasedRoute({ allowedRoles = [] }) {
         </div>
         <h1 className="text-2xl font-black text-deepNavy tracking-tight">Access Restricted</h1>
         <p className="text-xs sm:text-sm text-slateGray max-w-md mt-2 leading-relaxed">
-          Your current account role is <span className="font-bold text-deepNavy uppercase">[{userRole}]</span>. This section is reserved for {allowedRoles.join(' and ')} personnel.
+          Your current account role is <span className="font-bold text-deepNavy uppercase">[{userRole}]</span>. This section is reserved for {allowedRoles.join(' or ')} accounts.
         </p>
         <Link
           to="/dashboard"

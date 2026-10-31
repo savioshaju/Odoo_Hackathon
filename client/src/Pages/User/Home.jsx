@@ -52,41 +52,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Hero Mockup Preview */}
-      <div className="relative mx-auto max-w-6xl rounded-2xl bg-white p-3 border border-softLavender shadow-premium">
-        <div className="bg-mainBg rounded-xl overflow-hidden border border-softLavender p-6 sm:p-8">
-          <div className="flex items-center justify-between pb-6 border-b border-softLavender">
-            <div className="flex items-center gap-3">
-              <BrightloopLogo className="w-8 h-8" textClassName="text-base font-extrabold text-deepNavy" />
-              <span className="text-xs text-slateGray font-medium hidden sm:inline">/ Enterprise Workspace</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">
-                ● Live Operations
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
-            <div className="bg-white p-5 rounded-xl border border-softLavender shadow-xs">
-              <p className="text-xs text-slateGray font-bold uppercase tracking-wider">Annual Recurring Run-Rate</p>
-              <p className="text-2xl font-black text-deepNavy mt-1">$2,983,800.00.00</p>
-              <p className="text-xs text-emerald-600 font-semibold mt-1">↑ +32.4% year-over-year</p>
-            </div>
-            <div className="bg-white p-5 rounded-xl border border-softLavender shadow-xs">
-              <p className="text-xs text-slateGray font-bold uppercase tracking-wider">Global Subscribers</p>
-              <p className="text-2xl font-black text-deepNavy mt-1">0</p>
-              <p className="text-xs text-primary font-semibold mt-1">across 64 countries</p>
-            </div>
-            <div className="bg-white p-5 rounded-xl border border-softLavender shadow-xs">
-              <p className="text-xs text-slateGray font-bold uppercase tracking-wider">Failed Payment Recovery</p>
-              <p className="text-2xl font-black text-deepNavy mt-1">94.8%</p>
-              <p className="text-xs text-accent font-semibold mt-1">Instant dunning rescue</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Feature Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto pt-6">
         {[

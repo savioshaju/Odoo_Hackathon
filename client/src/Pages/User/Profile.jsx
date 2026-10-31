@@ -26,19 +26,41 @@ export default function Profile() {
   const dispatch = useDispatch();
   const currentUser = useSelector((state) => state.user?.userData);
 
-  const [loading, setLoading] = useState(true);
-  const [profileData, setProfileData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: '',
-    createdAt: '',
-  });
+  // Initialize profile data from currentUser if already present in Redux / localStorage
+  const [profileData, setProfileData] = useState(() => ({
+    name: currentUser?.name || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
+    role: currentUser?.role || 'user',
+    createdAt: currentUser?.createdAt || '',
+  }));
+
+  const [loading, setLoading] = useState(() => !currentUser?.email);
 
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '' });
+  const [editForm, setEditForm] = useState(() => ({
+    name: currentUser?.name || '',
+    phone: currentUser?.phone || '',
+  }));
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Synchronize when currentUser is populated or updated
+  useEffect(() => {
+    if (currentUser) {
+      setProfileData({
+        name: currentUser.name || '',
+        email: currentUser.email || '',
+        phone: currentUser.phone || '',
+        role: currentUser.role || 'user',
+        createdAt: currentUser.createdAt || '',
+      });
+      setEditForm({
+        name: currentUser.name || '',
+        phone: currentUser.phone || '',
+      });
+    }
+  }, [currentUser]);
 
   // Change password collapsible state (NOT always present, toggles on click)
   const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -50,18 +72,25 @@ export default function Profile() {
   const [showPassword, setShowPassword] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Fetch fresh profile data
+  // Fetch fresh profile data from backend API
   const fetchProfile = async () => {
     try {
-      setLoading(true);
+      if (!currentUser?.email) setLoading(true);
       const res = await axiosInstance.get('/users/profile');
-      if (res.data?.success && res.data?.user) {
-        setProfileData(res.data.user);
-        setEditForm({
-          name: res.data.user.name || '',
-          phone: res.data.user.phone || '',
+      const u = res.data?.user || res.data?.data || res.data;
+      if (u && (u.email || u.name)) {
+        setProfileData({
+          name: u.name || '',
+          email: u.email || '',
+          phone: u.phone || '',
+          role: u.role || 'user',
+          createdAt: u.createdAt || '',
         });
-        dispatch(saveUserData(res.data.user));
+        setEditForm({
+          name: u.name || '',
+          phone: u.phone || '',
+        });
+        dispatch(saveUserData(u));
       }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
@@ -190,21 +219,21 @@ export default function Profile() {
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto animate-fadeIn">
+    <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto py-1 sm:py-2 animate-fadeIn">
       {/* Top Banner Card */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-premium border border-softLavender flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#5145E5] via-[#8067F8] to-[#38C6D9] text-white flex items-center justify-center font-extrabold text-2xl uppercase shadow-md shadow-primary/20 shrink-0">
+      <div className="bg-white p-5 sm:p-8 rounded-2xl shadow-premium border border-softLavender flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-[#5145E5] via-[#8067F8] to-[#38C6D9] text-white flex items-center justify-center font-extrabold text-xl sm:text-2xl uppercase shadow-md shadow-primary/20 shrink-0">
             {profileData.name ? profileData.name[0] : 'U'}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black text-deepNavy tracking-tight">{profileData.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-deepNavy tracking-tight break-words">{profileData.name || 'Member'}</h1>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#5145E5]/10 text-primary border border-primary/20 capitalize">
                 {profileData.role || 'Member'}
               </span>
             </div>
-            <p className="text-xs text-slateGray mt-0.5">{profileData.email}</p>
+            <p className="text-xs text-slateGray mt-0.5 break-all">{profileData.email}</p>
             <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" /> Email Verified via Nodemailer
             </p>
@@ -213,7 +242,7 @@ export default function Profile() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition cursor-pointer self-stretch sm:self-auto justify-center"
+          className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition cursor-pointer w-full sm:w-auto justify-center"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>Sign Out</span>
@@ -221,10 +250,10 @@ export default function Profile() {
       </div>
 
       {/* Main Grid: Details & Collapsible Security Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6">
         {/* Left 2 Cols: Personal Details */}
-        <div className="lg:col-span-2 bg-white p-6 sm:p-8 rounded-2xl shadow-premium border border-softLavender">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-softLavender">
+        <div className="lg:col-span-2 bg-white p-5 sm:p-8 rounded-2xl shadow-premium border border-softLavender">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-softLavender">
             <div>
               <h2 className="text-base font-bold text-deepNavy">Account Details</h2>
               <p className="text-xs text-slateGray mt-0.5">Your personal credentials and billing contact info</p>
@@ -232,7 +261,7 @@ export default function Profile() {
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary hover:bg-[#5145E5]/10 transition cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-primary hover:bg-[#5145E5]/10 transition cursor-pointer self-start sm:self-auto"
             >
               {isEditing ? (
                 <>

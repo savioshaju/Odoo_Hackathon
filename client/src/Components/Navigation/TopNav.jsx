@@ -5,13 +5,10 @@ import {
   Search, 
   Bell, 
   Menu, 
-  Moon, 
-  Sun, 
   ChevronDown, 
   LogIn,
   UserPlus,
-  Command,
-  CheckCircle2
+  Command
 } from 'lucide-react';
 import { clearUserData } from '../../store/slice/userSlice';
 import axiosInstance from '../../Config/axiosInstance';
@@ -25,24 +22,12 @@ export default function TopNav({ onToggleMobileMenu }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Generate dynamic breadcrumb from pathname
   const pathParts = location.pathname.split('/').filter(Boolean);
   const currentPageTitle = pathParts.length > 0 
     ? pathParts[pathParts.length - 1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     : 'Dashboard';
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-    if (!isDarkMode) {
-      document.documentElement.classList.add('dark');
-      toast.info('Dark mode activated');
-    } else {
-      document.documentElement.classList.remove('dark');
-      toast.info('Light mode activated');
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -61,18 +46,41 @@ export default function TopNav({ onToggleMobileMenu }) {
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-softLavender px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Mobile Toggle & Breadcrumbs */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleMobileMenu}
-          className="lg:hidden p-2 text-slateGray hover:text-deepNavy rounded-lg hover:bg-mainBg transition cursor-pointer"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        {user && (
+          <button
+            onClick={onToggleMobileMenu}
+            className="lg:hidden p-2 text-slateGray hover:text-deepNavy rounded-lg hover:bg-mainBg transition cursor-pointer"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
 
-        {/* Modern Breadcrumb */}
-        <nav className="flex items-center text-xs font-medium text-slateGray">
+        {/* Modern Dynamic Breadcrumb */}
+        <nav className="flex items-center text-xs font-medium text-slateGray flex-wrap">
           <Link to="/" className="hover:text-primary transition">Brightloop</Link>
-          <span className="mx-2 text-softLavender">/</span>
-          <span className="text-deepNavy font-semibold">{currentPageTitle}</span>
+          {pathParts.length === 0 ? (
+            <>
+              <span className="mx-2 text-softLavender">/</span>
+              <span className="text-deepNavy font-semibold">Home</span>
+            </>
+          ) : (
+            pathParts.map((part, index) => {
+              const isLast = index === pathParts.length - 1;
+              const pathUrl = `/${pathParts.slice(0, index + 1).join('/')}`;
+              const label = part.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+              return (
+                <React.Fragment key={pathUrl}>
+                  <span className="mx-2 text-softLavender">/</span>
+                  {isLast ? (
+                    <span className="text-deepNavy font-semibold">{label}</span>
+                  ) : (
+                    <Link to={pathUrl} className="hover:text-primary transition">{label}</Link>
+                  )}
+                </React.Fragment>
+              );
+            })
+          )}
         </nav>
       </div>
 
@@ -93,15 +101,6 @@ export default function TopNav({ onToggleMobileMenu }) {
 
       {/* Right: Actions, Notifications, User */}
       <div className="flex items-center gap-3">
-        {/* Dark/Light mode toggle */}
-        <button
-          onClick={toggleDarkMode}
-          title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-          className="p-2 text-slateGray hover:text-deepNavy rounded-xl hover:bg-mainBg border border-transparent hover:border-softLavender transition cursor-pointer"
-        >
-          {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
-        </button>
-
         {/* Notifications (Only shown when logged in) */}
         {user && (
           <div className="relative">
@@ -113,7 +112,7 @@ export default function TopNav({ onToggleMobileMenu }) {
             </button>
 
             {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-softLavender p-4 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-softLavender p-4 z-50 animate-fadeIn">
                 <div className="flex items-center justify-between pb-3 border-b border-softLavender">
                   <span className="text-xs font-bold text-deepNavy uppercase tracking-wider">Notifications</span>
                 </div>
@@ -143,7 +142,7 @@ export default function TopNav({ onToggleMobileMenu }) {
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-softLavender p-2 z-50 animate-fadeIn">
+              <div className="absolute right-0 mt-2 w-52 sm:w-56 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-softLavender p-2 z-50 animate-fadeIn">
                 <div className="px-3 py-2 border-b border-softLavender">
                   <p className="text-xs font-bold text-deepNavy">{user.name}</p>
                   <p className="text-[11px] text-slateGray truncate">{user.email}</p>

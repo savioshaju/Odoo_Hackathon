@@ -1,6 +1,5 @@
 import { createBrowserRouter } from "react-router-dom";
 import Layout from "./Layout";
-import AdminLayout from "./AdminLayout";
 import Errorpage from "../Pages/Shared/Errorpage";
 import Home from "../Pages/User/Home";
 import Login from "../Pages/User/Login";
@@ -21,37 +20,42 @@ const router = createBrowserRouter([
         element: <Layout />,
         errorElement: <Errorpage />,
         children: [
-            // General registered user routes (accessible by 'user' & 'admin')
+            // Public Landing / Home (accessible to everyone)
             { path: '/', element: <Home /> },
-            { path: 'dashboard', element: <Dashboard /> },
-            { path: 'profile', element: <Profile /> },
-            { path: 'subscriptions', element: <Subscriptions /> },
-            { path: 'subscription-plans', element: <SubscriptionPlans /> },
-            { path: 'invoices', element: <Invoices /> },
-            { 
-              path: 'products', 
-              element: <GenericCatalogPage title="Available Products & Modules" subtitle="Explore software modules and SaaS add-ons." entityName="Product" canMutate={false} /> 
+
+            // Protected User & Admin Routes (Require Login)
+            {
+              element: <RoleBasedRoute allowedRoles={['user', 'admin']} />,
+              children: [
+                { path: 'dashboard', element: <Dashboard /> },
+                { path: 'profile', element: <Profile /> },
+                { path: 'subscriptions', element: <Subscriptions /> },
+                { path: 'subscription-plans', element: <SubscriptionPlans /> },
+                { path: 'invoices', element: <Invoices /> },
+                { 
+                  path: 'products', 
+                  element: <GenericCatalogPage title="Available Products & Modules" subtitle="Explore software modules and SaaS add-ons." entityName="Product" canMutate={false} /> 
+                },
+              ]
             },
 
-            // Admin Only restricted routes (only 2 roles: 'user' and 'admin')
+            // Admin Functions: Strictly nested under /admin/ (Require Admin Login)
             {
+              path: 'admin',
               element: <RoleBasedRoute allowedRoles={['admin']} />,
               children: [
-                { 
-                  path: 'product-variants', 
-                  element: <GenericCatalogPage title="Product Variants (Admin)" subtitle="SKUs, regional editions, and resource seat packaging." entityName="Variant" canMutate={true} /> 
-                },
+                { index: true, element: <AdminHome defaultTab="overview" /> },
                 { 
                   path: 'customers', 
-                  element: <GenericCatalogPage title="Customer Directory (Admin)" subtitle="Subscriber organizations and payment methods." entityName="Customer" canMutate={true} /> 
+                  element: <AdminHome defaultTab="users" /> 
                 },
                 { 
-                  path: 'quotations', 
-                  element: <GenericCatalogPage title="B2B Quotations (Admin)" subtitle="Enterprise sales proposals and contracts." entityName="Quotation" canMutate={true} /> 
+                  path: 'product-variants', 
+                  element: <AdminHome defaultTab="plans" /> 
                 },
                 { 
                   path: 'payments', 
-                  element: <GenericCatalogPage title="Payment Processing (Admin)" subtitle="Real-time transaction settlement and card chargebacks." entityName="Payment" canMutate={true} /> 
+                  element: <AdminHome defaultTab="subscriptions" /> 
                 },
                 { 
                   path: 'discounts', 
@@ -59,7 +63,7 @@ const router = createBrowserRouter([
                 },
                 { 
                   path: 'reports', 
-                  element: <GenericCatalogPage title="Financial Reports (Admin)" subtitle="GAAP revenue recognition, cohort churn, and MRR waterfall." entityName="Report" canMutate={true} /> 
+                  element: <AdminHome defaultTab="overview" /> 
                 },
                 { 
                   path: 'settings', 
@@ -83,20 +87,6 @@ const router = createBrowserRouter([
         path: '/forgot-password',
         element: <ForgotPassword />,
         errorElement: <Errorpage />
-    },
-    // Admin Only Portal
-    {
-        path: 'admin',
-        element: <AdminLayout />,
-        errorElement: <Errorpage />,
-        children: [
-            {
-                element: <RoleBasedRoute allowedRoles={['admin']} />,
-                children: [
-                    { path: '', element: <AdminHome /> }
-                ]
-            }
-        ]
     }
 ]);
 

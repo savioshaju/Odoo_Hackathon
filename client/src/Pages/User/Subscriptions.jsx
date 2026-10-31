@@ -81,7 +81,7 @@ export default function Subscriptions() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
           <button
             onClick={fetchSubscriptions}
             disabled={loading}
@@ -92,7 +92,7 @@ export default function Subscriptions() {
           </button>
           <Link
             to="/subscription-plans"
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition cursor-pointer text-center"
           >
             <Plus className="w-4 h-4" />
             <span>Browse Plans & Upgrade</span>
@@ -239,3 +239,4 @@ export default function Subscriptions() {
     </div>
   );
 }
+

@@ -97,7 +97,7 @@ export default function Invoices() {
           </div>
         ) : filtered.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[560px] text-left border-collapse">
               <thead>
                 <tr className="bg-mainBg text-[11px] font-bold uppercase tracking-wider text-slateGray border-b border-softLavender">
                   <th className="py-3.5 px-6">Invoice #</th>
@@ -164,3 +164,4 @@ export default function Invoices() {
     </div>
   );
 }
+
