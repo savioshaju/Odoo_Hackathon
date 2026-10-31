@@ -1,11 +1,10 @@
 import { Select, Space, Tag, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { DEMO_USERS } from './demoUsers.js';
-import { useDemoUser } from './DemoUser.jsx';
+import { DEMO_USERS } from '../constants/demoUsers.js';
+import { useDemoUser } from '../hooks/useDemoUser.js';
 
 const ROLE_COLOR = { admin: 'purple', staff: 'blue', customer: 'green' };
 
-// Demo-only: one click to see the app as Admin, Staff or either customer.
 export default function RoleSwitcher() {
   const { user, switchTo } = useDemoUser();
   const navigate = useNavigate();

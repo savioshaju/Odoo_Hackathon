@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../api.js';
-import { formatDateLong } from '../format.js';
+import { fetchClock } from '../services/billingApi.js';
+import { formatDateLong } from '../utils/format.js';
 
-// Always visible. Orange and loud when the Time Machine has moved the date, quiet when it is the real date.
 export default function DateBanner() {
   const { data, isError } = useQuery({
     queryKey: ['clock'],
-    queryFn: () => api('/clock'),
+    queryFn: fetchClock,
     refetchInterval: 3000,
   });
 
