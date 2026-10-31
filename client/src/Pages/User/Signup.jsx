@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, CheckCircle2, ArrowRight, Sparkles, RefreshCw, Layers, Check } from 'lucide-react';
+import { User, Mail, Phone, Lock, ShieldCheck, ArrowRight, Sparkles, RefreshCw, Layers, Check } from 'lucide-react';
 import axiosInstance from '../../Config/axiosInstance';
 import BrightloopLogo from '../../Components/Shared/BrightloopLogo';
 
@@ -314,7 +314,7 @@ export default function Signup() {
               {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
             </div>
 
-            {/* Email Address with Inline Send/Resend OTP button */}
+            {/* Email Address */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy mb-1.5">
                 Work Email Address <span className="text-primary">*</span>
@@ -336,7 +336,8 @@ export default function Signup() {
                     } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
                   />
                 </div>
-                {!otpSent ? (
+                {/* "Send OTP" button only appears when OTP has NOT been sent yet */}
+                {!otpSent && (
                   <button
                     type="button"
                     onClick={handleSendOTP}
@@ -344,15 +345,6 @@ export default function Signup() {
                     className="px-4 py-2.5 bg-gradient-to-r from-[#5145E5] to-[#8067F8] hover:from-[#4338CA] hover:to-[#6D52F7] disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md shadow-[#5145E5]/20 transition cursor-pointer whitespace-nowrap min-w-[100px] flex items-center justify-center"
                   >
                     {sendingOtp ? 'Sending...' : 'Send OTP'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendOTP}
-                    disabled={sendingOtp || countdown > 0}
-                    className="px-3.5 py-2.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:bg-gray-100 disabled:text-gray-400 text-primary font-bold text-xs rounded-xl transition cursor-pointer whitespace-nowrap min-w-[100px]"
-                  >
-                    {sendingOtp ? 'Sending...' : countdown > 0 ? `Resend (${countdown}s)` : 'Resend OTP'}
                   </button>
                 )}
               </div>
@@ -371,35 +363,45 @@ export default function Signup() {
               )}
             </div>
 
-            {/* Email OTP Code Field */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy">
-                  Email Verification Code <span className="text-primary">*</span>
-                </label>
-                {!otpSent && (
-                  <span className="text-[11px] text-slateGray">Click &quot;Send OTP&quot; to receive your code</span>
-                )}
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
-                  <ShieldCheck className="h-4 w-4" />
+            {/* Email OTP Code Field (Appears only once OTP is sent, with Resend OTP button right next to it) */}
+            {otpSent && (
+              <div className="animate-fadeIn p-3.5 bg-indigo-50/40 border border-indigo-200/80 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy">
+                    Enter 6-Digit Email OTP <span className="text-primary">*</span>
+                  </label>
+                  <span className="text-[11px] text-slateGray">Valid for 10 minutes</span>
                 </div>
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder={otpSent ? "Enter 6-digit OTP (e.g. 849201)" : "Click 'Send OTP' first"}
-                  maxLength={6}
-                  disabled={!otpSent}
-                  className={`w-full pl-10 pr-4 py-2.5 text-sm tracking-widest font-semibold border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
-                    otpSent
-                      ? 'border-primary bg-indigo-50/20 text-deepNavy focus:border-primary'
-                      : 'border-softLavender bg-gray-50 text-slateGray/60 cursor-not-allowed'
-                  }`}
-                />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-primary">
+                      <ShieldCheck className="h-4 w-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="123456"
+                      maxLength={6}
+                      autoFocus
+                      className="w-full pl-10 pr-4 py-2.5 bg-white text-sm tracking-[0.3em] font-bold text-deepNavy border border-primary/40 rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary"
+                    />
+                  </div>
+                  {/* Resend OTP button placed right next to the OTP input field */}
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={sendingOtp || countdown > 0}
+                    className="px-4 py-2.5 bg-white border border-indigo-200 hover:bg-indigo-50 disabled:bg-gray-100 disabled:text-gray-400 text-primary font-bold text-xs rounded-xl shadow-xs transition cursor-pointer whitespace-nowrap min-w-[105px] flex items-center justify-center"
+                  >
+                    {sendingOtp ? 'Sending...' : countdown > 0 ? `Resend (${countdown}s)` : 'Resend OTP'}
+                  </button>
+                </div>
+                <p className="text-[11px] text-slateGray">
+                  Enter the verification code sent to <strong>{formData.email}</strong>.
+                </p>
               </div>
-            </div>
+            )}
 
             {/* Phone Number */}
             <div>
