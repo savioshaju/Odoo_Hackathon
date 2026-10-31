@@ -1,4 +1,4 @@
-import mongoose, { model } from "mongoose";
+const mongoose = require('mongoose');
 
 const serviceSchema = mongoose.Schema(
     {
@@ -35,4 +35,4 @@ const serviceSchema = mongoose.Schema(
 );
 
 const Service = mongoose.model("Service", serviceSchema);
-module.exports = { Service }
+module.exports = { Service };
