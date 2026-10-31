@@ -24,6 +24,16 @@ const serviceSchema = mongoose.Schema(
             default: []
         },
 
+        price : {
+            type: String, 
+            required: true
+        }, 
+
+        duration : {
+            type: Number, 
+            required: true
+        },
+
         isActive: {
             type: Boolean,
             default: true

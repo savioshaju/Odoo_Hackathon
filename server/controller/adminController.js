@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const { User } = require('../model/userModel')
+const { Subscription } = require('../model/subscriptionModel')
+const { Service } = require('../model/serviceModel')
 
 const JWT_SECRET = process.env.JWT_SECRET_KEY || 'your-secret-key'
 
@@ -179,7 +181,6 @@ async function deleteAdminAccount(req, res, next) {
             return res.status(401).json({ success: false, message: 'Unauthorized' })
         }
 
-        // Soft delete
         const admin = await User.findByIdAndUpdate(
             adminId,
             { $set: { isActive: false } },
@@ -256,14 +257,12 @@ async function forgotAdminPassword(req, res, next) {
 
         const admin = await User.findOne({ email: email.toLowerCase(), role: 'admin' })
         if (!admin) {
-            // Avoid revealing whether account exists
             return res.status(200).json({
                 success: true,
                 message: 'If an admin account with that email exists, password reset instructions have been sent'
             })
         }
 
-        // Generate short-lived reset token (15 mins)
         const resetToken = jwt.sign(
             { id: admin._id, purpose: 'password_reset' },
             JWT_SECRET,
@@ -327,6 +326,117 @@ async function resetAdminPassword(req, res, next) {
     }
 }
 
+// GET /admin/overview - Real database aggregation of users, services, subscriptions, and revenue
+async function getAdminOverview(req, res, next) {
+    try {
+        const [totalUsers, totalServices, totalSubscriptions, activeSubscriptions, allSubs] = await Promise.all([
+            User.countDocuments(),
+            Service.countDocuments({ isActive: true }),
+            Subscription.countDocuments(),
+            Subscription.countDocuments({ status: 'active' }),
+            Subscription.find({}, 'amountPaid status')
+        ]);
+
+        let totalRevenue = 0;
+        let monthlyRecurringRevenue = 0;
+
+        allSubs.forEach(sub => {
+            const amount = Number(sub.amountPaid) || 0;
+            totalRevenue += amount;
+            if (sub.status === 'active') {
+                monthlyRecurringRevenue += amount;
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            stats: {
+                totalUsers,
+                totalServices,
+                totalSubscriptions,
+                activeSubscriptions,
+                totalRevenue,
+                monthlyRecurringRevenue
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+// GET /admin/users - List all users in MongoDB
+async function getAllUsers(req, res, next) {
+    try {
+        const users = await User.find().select('-password').sort({ createdAt: -1 });
+        return res.status(200).json({
+            success: true,
+            count: users.length,
+            users
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+// PUT /admin/users/:id/role - Update user role
+async function updateUserRole(req, res, next) {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).json({ success: false, message: 'Role must be user or admin' });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            { $set: { role } },
+            { returnDocument: 'after' }
+        ).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `User role updated to ${role}`,
+            user
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
+// PUT /admin/users/:id/status - Toggle active/inactive
+async function toggleUserStatus(req, res, next) {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        user.isActive = !user.isActive;
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isActive: user.isActive
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+}
+
 module.exports = {
     adminSignup,
     adminLogin,
@@ -336,5 +446,9 @@ module.exports = {
     deleteAdminAccount,
     changeAdminPassword,
     forgotAdminPassword,
-    resetAdminPassword
+    resetAdminPassword,
+    getAdminOverview,
+    getAllUsers,
+    updateUserRole,
+    toggleUserStatus
 }
