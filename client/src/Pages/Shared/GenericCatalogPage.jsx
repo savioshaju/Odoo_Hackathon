@@ -18,8 +18,8 @@ export default function GenericCatalogPage({
   const [items] = useState([]); // Zero dummy items; ready for database records
   const currentUser = useSelector((state) => state.user?.userData);
 
-  // Users can only view; only staff or admin can create/mutate items
-  const isPrivileged = currentUser?.role === 'admin' || currentUser?.role === 'staff' || canMutate;
+  // Users can view; only admin can create/mutate items
+  const isPrivileged = currentUser?.role === 'admin' || canMutate;
 
   return (
     <div className="space-y-6 animate-fadeIn">

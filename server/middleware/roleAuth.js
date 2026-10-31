@@ -2,9 +2,10 @@ const jwt = require('jsonwebtoken');
 
 /**
  * Universal Role-Based Authorization Middleware
+ * Enforces role restrictions (system strictly supports 'user' and 'admin').
  * Usage:
  *   requireRole('admin') - only admin
- *   requireRole(['admin', 'staff']) - admin or staff
+ *   requireRole(['user', 'admin']) - user or admin
  */
 function requireRole(allowedRoles = []) {
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
@@ -31,11 +32,11 @@ function requireRole(allowedRoles = []) {
             req.user = decoded;
             req.userId = decoded.id || decoded._id;
 
-            // If specific roles are required, enforce role-based access
+            // Enforce role check if roles are specified
             if (roles.length > 0 && !roles.includes(decoded.role)) {
                 return res.status(403).json({ 
                     success: false, 
-                    message: `Forbidden: Access restricted. You do not have permissions for this action. Role required: [${roles.join(', ')}].` 
+                    message: `Forbidden: Access restricted. Role required: [${roles.join(', ')}]. Current role: '${decoded.role}'.` 
                 });
             }
 

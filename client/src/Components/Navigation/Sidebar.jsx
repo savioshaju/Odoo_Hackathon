@@ -31,7 +31,8 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const userRole = user?.role || 'user';
+  // Strictly two roles: 'user' or 'admin'
+  const userRole = user?.role === 'admin' ? 'admin' : 'user';
 
   const handleLogout = async () => {
     try {
@@ -50,34 +51,34 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     {
       group: 'Core Platform',
       items: [
-        { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['user', 'staff', 'admin'] },
-        { label: 'Subscriptions', icon: CreditCard, path: '/subscriptions', roles: ['user', 'staff', 'admin'] },
-        { label: 'Subscription Plans', icon: Layers, path: '/subscription-plans', roles: ['user', 'staff', 'admin'] },
-        { label: 'Customers', icon: Users, path: '/customers', roles: ['staff', 'admin'] },
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['user', 'admin'] },
+        { label: 'My Subscriptions', icon: CreditCard, path: '/subscriptions', roles: ['user', 'admin'] },
+        { label: 'Subscription Plans', icon: Layers, path: '/subscription-plans', roles: ['user', 'admin'] },
+        { label: 'Customers', icon: Users, path: '/customers', roles: ['admin'] },
       ]
     },
     {
-      group: 'Catalog & Inventory',
+      group: 'Catalog & Services',
       items: [
-        { label: 'Products', icon: Package, path: '/products', roles: ['user', 'staff', 'admin'] },
-        { label: 'Product Variants', icon: Layers, path: '/product-variants', roles: ['staff', 'admin'] },
-        { label: 'Discounts', icon: Percent, path: '/discounts', roles: ['staff', 'admin'] },
+        { label: 'Products', icon: Package, path: '/products', roles: ['user', 'admin'] },
+        { label: 'Product Variants', icon: Layers, path: '/product-variants', roles: ['admin'] },
+        { label: 'Discounts', icon: Percent, path: '/discounts', roles: ['admin'] },
       ]
     },
     {
       group: 'Billing & Finance',
       items: [
-        { label: 'Quotations', icon: FileText, path: '/quotations', roles: ['staff', 'admin'] },
-        { label: 'Invoices', icon: Receipt, path: '/invoices', roles: ['user', 'staff', 'admin'] },
-        { label: 'Payments', icon: DollarSign, path: '/payments', roles: ['staff', 'admin'] },
-        { label: 'Reports & Analytics', icon: BarChart3, path: '/reports', roles: ['staff', 'admin'] },
+        { label: 'Quotations', icon: FileText, path: '/quotations', roles: ['admin'] },
+        { label: 'My Invoices', icon: Receipt, path: '/invoices', roles: ['user', 'admin'] },
+        { label: 'Payments', icon: DollarSign, path: '/payments', roles: ['admin'] },
+        { label: 'Reports & Analytics', icon: BarChart3, path: '/reports', roles: ['admin'] },
       ]
     },
     {
-      group: 'System',
+      group: 'Settings & Account',
       items: [
-        { label: 'Profile', icon: UserIcon, path: '/profile', roles: ['user', 'staff', 'admin'] },
-        { label: 'Settings', icon: Settings, path: '/settings', roles: ['staff', 'admin'] },
+        { label: 'My Profile', icon: UserIcon, path: '/profile', roles: ['user', 'admin'] },
+        { label: 'Workspace Settings', icon: Settings, path: '/settings', roles: ['admin'] },
       ]
     }
   ];
@@ -100,42 +101,47 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           </NavLink>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex p-1.5 rounded-lg text-slateGray hover:text-deepNavy hover:bg-mainBg transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slateGray hover:text-deepNavy hover:bg-mainBg transition cursor-pointer hidden lg:flex"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <div className="py-4 px-3 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
-          {navGroups.map((group, gIdx) => {
-            const visibleItems = group.items.filter(item => item.roles.includes(userRole));
+        {/* Navigation Group Items */}
+        <div className="py-4 px-3 space-y-6 overflow-y-auto max-h-[calc(100vh-8.5rem)]">
+          {navGroups.map((grp, idx) => {
+            // Filter visible items according to strict role: 'user' vs 'admin'
+            const visibleItems = grp.items.filter(item => 
+              user ? item.roles.includes(userRole) : item.roles.includes('user')
+            );
+
             if (visibleItems.length === 0) return null;
 
             return (
-              <div key={gIdx} className="space-y-1">
+              <div key={idx} className="space-y-1">
                 {!collapsed && (
-                  <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slateGray/70">
-                    {group.group}
-                  </div>
+                  <p className="px-3 text-[10px] font-black uppercase tracking-wider text-slateGray/80 mb-2">
+                    {grp.group}
+                  </p>
                 )}
-                {visibleItems.map((item, iIdx) => {
+                {visibleItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.path;
+
                   return (
                     <NavLink
-                      key={iIdx}
+                      key={item.path}
                       to={item.path}
                       title={collapsed ? item.label : undefined}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group cursor-pointer ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-xs transition duration-150 group ${
                         isActive
-                          ? 'bg-[#5145E5]/10 text-primary border border-primary/20 shadow-xs'
+                          ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-md shadow-primary/20'
                           : 'text-slateGray hover:text-deepNavy hover:bg-mainBg'
-                      }`}
+                      } ${collapsed ? 'justify-center px-0' : ''}`}
                     >
-                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-slateGray group-hover:text-deepNavy'}`} />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slateGray group-hover:text-primary transition-colors'}`} />
+                      {!collapsed && <span>{item.label}</span>}
                     </NavLink>
                   );
                 })}
@@ -145,8 +151,8 @@ export default function Sidebar({ collapsed, setCollapsed }) {
         </div>
       </div>
 
-      {/* Bottom Section: Actual Logged-In User Profile OR Login Prompt */}
-      <div className="p-3 border-t border-softLavender bg-white">
+      {/* Bottom Section: User profile summary OR Log In action */}
+      <div className="p-3 border-t border-softLavender">
         {user ? (
           !collapsed ? (
             <div className="p-2.5 rounded-xl bg-mainBg border border-softLavender flex items-center justify-between">
@@ -157,7 +163,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <p className="text-xs font-bold text-deepNavy truncate">{user.name}</p>
-                    <span className="px-1.5 py-0.2 bg-primary/10 text-primary rounded text-[9px] font-bold uppercase">
+                    <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
+                      userRole === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-primary/10 text-primary'
+                    }`}>
                       {userRole}
                     </span>
                   </div>
@@ -191,7 +199,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
             </div>
           )
         ) : (
-          /* When NOT logged in: Show clean Log In button instead of mock account */
+          /* When NOT logged in: Show clean Log In button */
           !collapsed ? (
             <NavLink
               to="/login"
