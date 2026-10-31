@@ -6,8 +6,8 @@ const { User } = require('../model/userModel');
 // 1. Create subscription
 async function createSubscription(req, res, next) {
     try {
-        const userId = req.body.userId || req.userId || req.user?.id;
-        const { serviceId, startDate, durationInDays, amountPaid } = req.body;
+        const userId = req.userId || req.user?.id || req.body?.userId;
+        const { serviceId, startDate, durationInDays, amountPaid } = req.body || {};
 
         if (!userId) {
             return res.status(400).json({ success: false, message: 'User ID is required' });
@@ -16,21 +16,41 @@ async function createSubscription(req, res, next) {
             return res.status(400).json({ success: false, message: 'Service ID is required' });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ success: false, message: 'Invalid user ID format' });
+        }
         if (!mongoose.Types.ObjectId.isValid(serviceId)) {
             return res.status(400).json({ success: false, message: 'Invalid service ID format' });
+        }
+
+        if (!(await User.exists({ _id: userId }))) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         const service = await Service.findById(serviceId);
         if (!service) {
             return res.status(404).json({ success: false, message: 'Service not found in database' });
         }
+        if (!service.isActive) {
+            return res.status(400).json({ success: false, message: 'Service is not active' });
+        }
 
         const effectiveStartDate = startDate ? new Date(startDate) : new Date();
+        if (Number.isNaN(effectiveStartDate.getTime())) {
+            return res.status(400).json({ success: false, message: 'Invalid start date' });
+        }
+
         const duration = Number(durationInDays) || Number(service.duration) || 30;
+        if (!Number.isInteger(duration) || duration <= 0) {
+            return res.status(400).json({ success: false, message: 'Duration must be a positive whole number of days' });
+        }
         const effectiveEndDate = new Date(effectiveStartDate);
         effectiveEndDate.setDate(effectiveEndDate.getDate() + duration);
 
-        const priceNumber = Number(amountPaid) || parseFloat(service.price) || 0;
+        const priceNumber = Number(amountPaid) || parseFloat(service.price);
+        if (Number.isNaN(priceNumber) || priceNumber < 0) {
+            return res.status(400).json({ success: false, message: 'A valid amount is required' });
+        }
 
         const newSubscription = await Subscription.create({
             userId,
@@ -105,6 +125,9 @@ async function getUserSubscriptions(req, res, next) {
         if (!userId) {
             return res.status(400).json({ success: false, message: 'User ID is required' });
         }
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ success: false, message: 'Invalid user ID' });
+        }
 
         const subscriptions = await Subscription.find({ userId })
             .populate('serviceId')
@@ -150,15 +173,19 @@ async function cancelSubscription(req, res, next) {
             return res.status(400).json({ success: false, message: 'Invalid subscription ID' });
         }
 
-        const subscription = await Subscription.findByIdAndUpdate(
-            id,
-            { $set: { status: 'canceled' } },
-            { returnDocument: 'after' }
-        ).populate('serviceId');
+        const subscription = await Subscription.findById(id);
 
         if (!subscription) {
             return res.status(404).json({ success: false, message: 'Subscription not found' });
         }
+
+        if (subscription.status !== 'active') {
+            return res.status(409).json({ success: false, message: `Subscription is already ${subscription.status}` });
+        }
+
+        subscription.status = 'canceled';
+        await subscription.save();
+        await subscription.populate('serviceId');
 
         return res.status(200).json({
             success: true,
