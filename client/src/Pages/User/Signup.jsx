@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
+import { User, Mail, Phone, Lock, Eye, EyeOff, ShieldCheck, CheckCircle2, ArrowRight, Sparkles, RefreshCw, Layers, Check } from 'lucide-react';
 import axiosInstance from '../../Config/axiosInstance';
-import { saveUserData } from '../../store/slice/userSlice';
+import BrightloopLogo from '../../Components/Shared/BrightloopLogo';
 
-// Strict email regex: requires valid chars, domain, and 2+ char extension
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
-// Simple 10-digit phone regex
 const PHONE_REGEX = /^\d{10}$/;
 
 export default function Signup() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +17,7 @@ export default function Signup() {
     phone: '',
     password: '',
     confirmPassword: '',
+    termsAgreed: true,
   });
 
   const [otp, setOtp] = useState('');
@@ -31,7 +28,6 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [countdown, setCountdown] = useState(0);
 
-  // Countdown timer for Resend OTP
   useEffect(() => {
     let timer;
     if (countdown > 0) {
@@ -40,7 +36,6 @@ export default function Signup() {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // Live password criteria check
   const passwordCriteria = {
     length: formData.password.length >= 8,
     uppercase: /[A-Z]/.test(formData.password),
@@ -49,69 +44,44 @@ export default function Signup() {
     special: /[!@#$%^&*(),.?":{}|<>_\-]/.test(formData.password),
   };
 
+  const getPasswordStrength = () => {
+    const metCount = Object.values(passwordCriteria).filter(Boolean).length;
+    if (metCount <= 2) return { label: 'Weak', color: 'bg-red-400', width: '25%' };
+    if (metCount === 3) return { label: 'Fair', color: 'bg-amber-400', width: '50%' };
+    if (metCount === 4) return { label: 'Good', color: 'bg-indigo-400', width: '75%' };
+    return { label: 'Strong', color: 'bg-emerald-500', width: '100%' };
+  };
+
   const validateField = (name, value) => {
-    let error = '';
     switch (name) {
       case 'name':
-        if (!value.trim()) {
-          error = 'Full name is required';
-        } else if (value.trim().length < 2) {
-          error = 'Name must be at least 2 characters';
-        }
-        break;
-
+        if (!value.trim()) return 'Full name is required';
+        if (value.trim().length < 2) return 'Must be at least 2 characters';
+        return '';
       case 'email':
-        if (!value.trim()) {
-          error = 'Email address is required';
-        } else if (!EMAIL_REGEX.test(value.trim())) {
-          error = 'Please enter a valid email address';
-        }
-        break;
-
-      case 'phone': {
-        const cleaned = value.trim().replace(/\D/g, '');
-        if (!cleaned) {
-          error = 'Phone number is required';
-        } else if (!PHONE_REGEX.test(cleaned)) {
-          error = 'Phone number must be exactly 10 digits';
-        }
-        break;
-      }
-
+        if (!value.trim()) return 'Email address is required';
+        if (!EMAIL_REGEX.test(value.trim())) return 'Enter a valid email (e.g. name@domain.com)';
+        return '';
+      case 'phone':
+        if (!value.trim()) return 'Phone number is required';
+        if (!PHONE_REGEX.test(value.trim())) return 'Phone number must be exactly 10 digits';
+        return '';
       case 'password':
-        if (!value) {
-          error = 'Password is required';
-        } else if (value.length < 8) {
-          error = 'Password must be at least 8 characters long';
-        } else if (!/[A-Z]/.test(value)) {
-          error = 'Must include at least one uppercase letter (A-Z)';
-        } else if (!/[a-z]/.test(value)) {
-          error = 'Must include at least one lowercase letter (a-z)';
-        } else if (!/[0-9]/.test(value)) {
-          error = 'Must include at least one number (0-9)';
-        } else if (!/[!@#$%^&*(),.?":{}|<>_\-]/.test(value)) {
-          error = 'Must include at least one special character (!@#$%^&*...)';
-        }
-        break;
-
+        if (!value) return 'Password is required';
+        if (value.length < 8) return 'Must be at least 8 characters';
+        return '';
       case 'confirmPassword':
-        if (!value) {
-          error = 'Please confirm your password';
-        } else if (value !== formData.password) {
-          error = 'Passwords do not match';
-        }
-        break;
-
+        if (!value) return 'Please confirm your password';
+        if (value !== formData.password) return 'Passwords do not match';
+        return '';
       default:
-        break;
+        return '';
     }
-    return error;
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    let processedValue = value;
+    const { name, value, type, checked } = e.target;
+    let processedValue = type === 'checkbox' ? checked : value;
     if (name === 'phone') {
       processedValue = value.replace(/\D/g, '').slice(0, 10);
     }
@@ -121,19 +91,21 @@ export default function Signup() {
       [name]: processedValue,
     }));
 
-    const fieldError = validateField(name, processedValue);
-    setErrors((prev) => ({
-      ...prev,
-      [name]: fieldError,
-      ...(name === 'password' && prev.confirmPassword
-        ? { confirmPassword: processedValue !== formData.confirmPassword ? 'Passwords do not match' : '' }
-        : {}),
-    }));
+    if (type !== 'checkbox') {
+      const fieldError = validateField(name, processedValue);
+      setErrors((prev) => ({
+        ...prev,
+        [name]: fieldError,
+        ...(name === 'password' && prev.confirmPassword
+          ? { confirmPassword: processedValue !== formData.confirmPassword ? 'Passwords do not match' : '' }
+          : {}),
+      }));
+    }
   };
 
   const validateAll = () => {
     const newErrors = {};
-    Object.keys(formData).forEach((key) => {
+    ['name', 'email', 'phone', 'password', 'confirmPassword'].forEach((key) => {
       const error = validateField(key, formData[key]);
       if (error) newErrors[key] = error;
     });
@@ -141,10 +113,14 @@ export default function Signup() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Step 1: Send OTP (validates info and verifies email uniqueness on backend first)
+  // Step 1: Send OTP to verify email
   const handleSendOTP = async () => {
     if (!validateAll()) {
-      toast.error('Please fix all field errors before requesting OTP');
+      toast.error('Please resolve the field errors before requesting OTP');
+      return;
+    }
+    if (!formData.termsAgreed) {
+      toast.error('Please accept the Brightloop terms to continue');
       return;
     }
 
@@ -160,7 +136,7 @@ export default function Signup() {
 
       if (response.data?.success) {
         setOtpSent(true);
-        setCountdown(60); // 60s cooldown
+        setCountdown(60);
         toast.success(response.data.message || 'OTP sent to your email!');
       } else {
         toast.error(response.data?.message || 'Failed to send OTP');
@@ -178,7 +154,7 @@ export default function Signup() {
     }
   };
 
-  // Resend OTP handler
+  // Step 2: Resend OTP
   const handleResendOTP = async () => {
     if (countdown > 0) return;
     setSendingOtp(true);
@@ -189,30 +165,27 @@ export default function Signup() {
 
       if (response.data?.success) {
         setCountdown(60);
-        toast.success(response.data.message || 'A new verification OTP has been sent!');
+        toast.success('A new verification code has been dispatched!');
       } else {
         toast.error(response.data?.message || 'Failed to resend OTP');
       }
     } catch (err) {
-      console.error('Resend OTP error:', err);
-      const errorMsg = err.response?.data?.message || 'Error resending OTP';
-      toast.error(errorMsg);
+      toast.error(err.response?.data?.message || 'Error resending OTP');
     } finally {
       setSendingOtp(false);
     }
   };
 
-  // Step 2: Verify OTP on registration page, then proceed to login
-  const handleRegisterAndLogin = async (e) => {
+  // Step 3: Verify OTP and complete registration
+  const handleVerifyAndRegister = async (e) => {
     e.preventDefault();
 
     if (!otpSent) {
-      toast.error('Please request an OTP first by clicking "Send OTP"');
+      toast.error('Please send an OTP first');
       return;
     }
-
     if (!otp.trim() || otp.trim().length !== 6) {
-      toast.error('Please enter the 6-digit OTP code sent to your email');
+      toast.error('Please enter the 6-digit OTP code');
       return;
     }
 
@@ -224,284 +197,384 @@ export default function Signup() {
       });
 
       if (response.data?.success) {
-        toast.success('Email verified and registered successfully! Please log in.');
-        // Navigate directly to login with the registered email prefilled
+        toast.success('Account created successfully! Welcome to Brightloop.');
         navigate('/login', { state: { email: formData.email.trim() } });
       } else {
         toast.error(response.data?.message || 'Verification failed');
       }
     } catch (err) {
       console.error('Registration error:', err);
-      const errorMsg =
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'Registration failed';
-      toast.error(errorMsg);
+      toast.error(err.response?.data?.message || 'Registration failed');
     } finally {
       setVerifying(false);
     }
   };
 
+  const strength = getPasswordStrength();
+
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 py-12 bg-gray-50">
-      <div className="w-full max-w-xl bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-gray-100">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Create your account</h2>
-          <p className="text-sm text-gray-500 mt-2">Fill in your details, verify OTP, and proceed to login</p>
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F7F8FC]">
+      {/* LEFT ARTWORK SECTION: 2026 Split-Screen with Abstract Geometric Artwork */}
+      <div className="relative w-full lg:w-[46%] min-h-[460px] lg:min-h-screen bg-gradient-to-br from-[#171A35] via-[#5145E5] to-[#8067F8] p-8 sm:p-12 lg:p-16 flex flex-col justify-between overflow-hidden text-white">
+        {/* Glow Spheres */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#38C6D9]/25 blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#8067F8]/40 blur-[110px] pointer-events-none" />
+
+        {/* Brand Header */}
+        <div className="relative z-10 flex items-center justify-between">
+          <Link to="/">
+            <BrightloopLogo 
+              className="h-10 w-10 shadow-lg shadow-black/20" 
+              textClassName="text-2xl font-black text-white" 
+            />
+          </Link>
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/15 text-white/90">
+            <Sparkles className="w-3.5 h-3.5 text-[#38C6D9]" /> 14-Day Pro Trial
+          </span>
         </div>
 
-        <form onSubmit={handleRegisterAndLogin} className="space-y-4" noValidate>
-          {/* Full Name */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Full Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              disabled={otpSent}
-              value={formData.name}
-              onChange={handleChange}
-              placeholder="e.g. Rahul Sharma"
-              className={`w-full px-3.5 py-2.5 text-sm border rounded-lg transition focus:outline-none focus:ring-2 ${
-                errors.name
-                  ? 'border-red-400 focus:ring-red-400 bg-red-50/30'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              } ${otpSent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+        {/* Center Artwork & Visual Features */}
+        <div className="relative z-10 my-auto py-10 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-[#38C6D9]/15 border border-[#38C6D9]/30 text-[#38C6D9] mb-5">
+            <Layers className="w-3.5 h-3.5" /> Modern Architecture
           </div>
 
-          {/* Email Address */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Email Address <span className="text-red-500">*</span>
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                name="email"
-                disabled={otpSent}
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="rahul@example.com"
-                className={`flex-1 px-3.5 py-2.5 text-sm border rounded-lg transition focus:outline-none focus:ring-2 ${
-                  errors.email
-                    ? 'border-red-400 focus:ring-red-400 bg-red-50/30'
-                    : 'border-gray-300 focus:ring-indigo-500'
-                } ${otpSent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              />
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.15] text-white">
+            Build your recurring <br />
+            <span className="bg-gradient-to-r from-white via-white/95 to-[#38C6D9] bg-clip-text text-transparent">
+              revenue engine.
+            </span>
+          </h2>
+
+          <p className="mt-4 text-base text-white/80 leading-relaxed font-normal">
+            Join thousands of modern founders and finance teams operating subscription billing, automated invoicing, and instant dunning without friction.
+          </p>
+
+          {/* Abstract 3D Geometric Card Artwork */}
+          <div className="mt-8 space-y-3">
+            {[
+              { title: 'Automated Invoice Reconciliation', sub: 'Instant syncing with your ledger and bank feeds' },
+              { title: 'Smart Dunning & Card Recovery', sub: 'Recover up to 74% of failed payments automatically' },
+              { title: 'Multi-Currency & Regional Taxes', sub: 'Built-in support for global SaaS compliance' },
+            ].map((item, idx) => (
+              <div key={idx} className="glass-dark rounded-xl p-3.5 border border-white/15 backdrop-blur-md flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-[#5145E5] to-[#38C6D9] flex items-center justify-center shrink-0 mt-0.5">
+                  <Check className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white tracking-wide">{item.title}</p>
+                  <p className="text-[11px] text-white/70">{item.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/60">
+          <span>Enterprise Grade SOC-2 Type II Certified</span>
+          <span>© 2026 Brightloop</span>
+        </div>
+      </div>
+
+      {/* RIGHT REGISTRATION SECTION */}
+      <div className="w-full lg:w-[54%] flex items-center justify-center p-6 sm:p-12 lg:p-16">
+        <div className="w-full max-w-xl">
+          <div className="mb-8">
+            <h1 className="text-3xl font-extrabold text-deepNavy tracking-tight">
+              Create your account
+            </h1>
+            <p className="mt-2 text-sm text-slateGray">
+              Get started with Brightloop today. Verify your email to complete registration.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyAndRegister} className="space-y-4" noValidate>
+            {/* Full Name */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy mb-1.5">
+                Full Name <span className="text-primary">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
+                  <User className="h-4 w-4" />
+                </div>
+                <input
+                  type="text"
+                  name="name"
+                  disabled={otpSent}
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Alex Rivera"
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
+                    errors.name ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
+                  } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
+                />
+              </div>
+              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            </div>
+
+            {/* Email Address with Inline Send/Resend OTP button */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy mb-1.5">
+                Work Email Address <span className="text-primary">*</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    disabled={otpSent}
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="alex@company.com"
+                    className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
+                      errors.email ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
+                    } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
+                  />
+                </div>
+                {!otpSent ? (
+                  <button
+                    type="button"
+                    onClick={handleSendOTP}
+                    disabled={sendingOtp}
+                    className="px-4 py-2.5 bg-gradient-to-r from-[#5145E5] to-[#8067F8] hover:from-[#4338CA] hover:to-[#6D52F7] disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md shadow-[#5145E5]/20 transition cursor-pointer whitespace-nowrap min-w-[100px] flex items-center justify-center"
+                  >
+                    {sendingOtp ? 'Sending...' : 'Send OTP'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={sendingOtp || countdown > 0}
+                    className="px-3.5 py-2.5 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:bg-gray-100 disabled:text-gray-400 text-primary font-bold text-xs rounded-xl transition cursor-pointer whitespace-nowrap min-w-[100px]"
+                  >
+                    {sendingOtp ? 'Sending...' : countdown > 0 ? `Resend (${countdown}s)` : 'Resend OTP'}
+                  </button>
+                )}
+              </div>
+              {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+              {otpSent && (
+                <div className="flex items-center justify-between mt-1 text-xs text-emerald-600 font-medium">
+                  <span>✓ 6-Digit code sent to {formData.email}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setOtpSent(false); setOtp(''); }}
+                    className="text-primary hover:underline cursor-pointer"
+                  >
+                    Change email
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Email OTP Code Field */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy">
+                  Email Verification Code <span className="text-primary">*</span>
+                </label>
+                {!otpSent && (
+                  <span className="text-[11px] text-slateGray">Click &quot;Send OTP&quot; to receive your code</span>
+                )}
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder={otpSent ? "Enter 6-digit OTP (e.g. 849201)" : "Click 'Send OTP' first"}
+                  maxLength={6}
+                  disabled={!otpSent}
+                  className={`w-full pl-10 pr-4 py-2.5 text-sm tracking-widest font-semibold border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
+                    otpSent
+                      ? 'border-primary bg-indigo-50/20 text-deepNavy focus:border-primary'
+                      : 'border-softLavender bg-gray-50 text-slateGray/60 cursor-not-allowed'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy mb-1.5">
+                Mobile Number <span className="text-primary">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
+                  <Phone className="h-4 w-4" />
+                </div>
+                <input
+                  type="tel"
+                  name="phone"
+                  disabled={otpSent}
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="10-digit number (e.g. 9876543210)"
+                  maxLength={10}
+                  className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
+                    errors.phone ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
+                  } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
+                />
+              </div>
+              {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+            </div>
+
+            {/* Password Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy">
+                    Password <span className="text-primary">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-[11px] text-primary hover:text-secondary font-medium cursor-pointer"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    disabled={otpSent}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
+                      errors.password ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
+                    } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-deepNavy mb-1.5">
+                  Confirm Password <span className="text-primary">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slateGray">
+                    <Lock className="h-4 w-4" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    disabled={otpSent}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
+                      errors.confirmPassword ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
+                    } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div className="p-3 bg-white border border-softLavender rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="text-slateGray">Password Strength:</span>
+                  <span className={strength.label === 'Strong' ? 'text-emerald-600' : 'text-primary'}>
+                    {strength.label}
+                  </span>
+                </div>
+                <div className="w-full bg-softLavender h-1.5 rounded-full overflow-hidden">
+                  <div className={`h-full ${strength.color} transition-all duration-300`} style={{ width: strength.width }} />
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[11px] text-slateGray pt-1">
+                  <span className={passwordCriteria.length ? 'text-emerald-600 font-medium' : ''}>✓ 8+ chars</span>
+                  <span className={passwordCriteria.uppercase ? 'text-emerald-600 font-medium' : ''}>✓ 1 Uppercase</span>
+                  <span className={passwordCriteria.number ? 'text-emerald-600 font-medium' : ''}>✓ 1 Number</span>
+                  <span className={passwordCriteria.special ? 'text-emerald-600 font-medium' : ''}>✓ 1 Special symbol</span>
+                </div>
+              </div>
+            )}
+
+            {/* Terms and conditions checkbox */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="termsAgreed"
+                  checked={formData.termsAgreed}
+                  onChange={handleChange}
+                  className="w-4 h-4 mt-0.5 text-primary bg-white border-softLavender rounded focus:ring-primary/20 accent-[#5145E5] cursor-pointer"
+                />
+                <span className="text-xs text-slateGray leading-relaxed select-none">
+                  I agree to the Brightloop <a href="#" className="text-primary hover:underline font-semibold">Terms of Service</a> and acknowledge the <a href="#" className="text-primary hover:underline font-semibold">Privacy Policy</a>.
+                </span>
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-2">
               {!otpSent ? (
                 <button
                   type="button"
                   onClick={handleSendOTP}
                   disabled={sendingOtp}
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-lg shadow-sm transition text-xs cursor-pointer whitespace-nowrap flex items-center justify-center min-w-[95px]"
+                  className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#5145E5] to-[#8067F8] hover:from-[#4338CA] hover:to-[#6D52F7] shadow-lg shadow-[#5145E5]/25 hover:shadow-xl hover:shadow-[#5145E5]/35 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-[0.99]"
                 >
-                  {sendingOtp ? 'Sending...' : 'Send OTP'}
+                  {sendingOtp ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Checking Details & Sending OTP...
+                    </span>
+                  ) : (
+                    <>
+                      <span>Send OTP to Verify Email</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  disabled={sendingOtp || countdown > 0}
-                  className="px-4 py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:bg-gray-100 disabled:text-gray-400 font-semibold rounded-lg border border-indigo-200 transition text-xs cursor-pointer whitespace-nowrap min-w-[95px]"
+                  type="submit"
+                  disabled={verifying || otp.length !== 6}
+                  className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#5145E5] to-[#38C6D9] hover:from-[#4338CA] hover:to-[#22A5B8] shadow-lg shadow-[#5145E5]/25 hover:shadow-xl hover:shadow-[#5145E5]/35 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-[0.99]"
                 >
-                  {sendingOtp ? 'Sending...' : countdown > 0 ? `Resend (${countdown}s)` : 'Resend OTP'}
+                  {verifying ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Verifying OTP & Registering...
+                    </span>
+                  ) : (
+                    <>
+                      <span>Verify OTP & Complete Registration</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               )}
             </div>
-            {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
-            {otpSent && (
-              <div className="flex items-center justify-between mt-1 text-xs text-green-600">
-                <span>✓ OTP sent to {formData.email}</span>
-                <button
-                  type="button"
-                  onClick={() => { setOtpSent(false); setOtp(''); }}
-                  className="text-indigo-600 hover:underline cursor-pointer"
-                >
-                  Change email
-                </button>
-              </div>
-            )}
-          </div>
+          </form>
 
-          {/* OTP Code Input (Always visible on the page) */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-gray-700">
-                Email OTP Code <span className="text-red-500">*</span>
-              </label>
-              {!otpSent && (
-                <span className="text-xs text-gray-400">Click &quot;Send OTP&quot; above to receive code</span>
-              )}
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder={otpSent ? "Enter 6-digit OTP" : "Click 'Send OTP' first"}
-                maxLength={6}
-                disabled={!otpSent}
-                className={`w-full px-3.5 py-2.5 text-sm tracking-widest font-semibold border rounded-lg transition focus:outline-none focus:ring-2 ${
-                  otpSent
-                    ? 'border-indigo-400 bg-indigo-50/20 focus:ring-indigo-500'
-                    : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                }`}
-              />
-            </div>
-            {otpSent && (
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the 6-digit verification code sent to your email.
-              </p>
-            )}
-          </div>
-
-          {/* Phone Number (Simple 10 digits) */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              disabled={otpSent}
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="10-digit number (e.g. 9876543210)"
-              maxLength={10}
-              className={`w-full px-3.5 py-2.5 text-sm border rounded-lg transition focus:outline-none focus:ring-2 ${
-                errors.phone
-                  ? 'border-red-400 focus:ring-red-400 bg-red-50/30'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              }`}
-            />
-            {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
-          </div>
-
-          {/* Password */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-gray-700">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+          {/* Login Link */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-slateGray">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="font-bold text-primary hover:text-secondary transition"
               >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              disabled={otpSent}
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className={`w-full px-3.5 py-2.5 text-sm border rounded-lg transition focus:outline-none focus:ring-2 ${
-                errors.password
-                  ? 'border-red-400 focus:ring-red-400 bg-red-50/30'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              } ${otpSent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            />
-            {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-
-            {/* Password checklist criteria */}
-            <div className="mt-2.5 p-3 bg-gray-50 rounded-lg border border-gray-200 grid grid-cols-2 gap-1.5 text-xs">
-              <span className={passwordCriteria.length ? 'text-green-600 font-medium' : 'text-gray-500'}>
-                {passwordCriteria.length ? '✓' : '•'} At least 8 characters
-              </span>
-              <span className={passwordCriteria.uppercase ? 'text-green-600 font-medium' : 'text-gray-500'}>
-                {passwordCriteria.uppercase ? '✓' : '•'} 1 Uppercase letter (A-Z)
-              </span>
-              <span className={passwordCriteria.lowercase ? 'text-green-600 font-medium' : 'text-gray-500'}>
-                {passwordCriteria.lowercase ? '✓' : '•'} 1 Lowercase letter (a-z)
-              </span>
-              <span className={passwordCriteria.number ? 'text-green-600 font-medium' : 'text-gray-500'}>
-                {passwordCriteria.number ? '✓' : '•'} 1 Number (0-9)
-              </span>
-              <span className={`col-span-2 ${passwordCriteria.special ? 'text-green-600 font-medium' : 'text-gray-500'}`}>
-                {passwordCriteria.special ? '✓' : '•'} 1 Special character (!@#$%^&*...)
-              </span>
-            </div>
+                Sign in
+              </Link>
+            </p>
           </div>
-
-          {/* Confirm Password */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
-              Confirm Password <span className="text-red-500">*</span>
-            </label>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="confirmPassword"
-              disabled={otpSent}
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              placeholder="••••••••"
-              className={`w-full px-3.5 py-2.5 text-sm border rounded-lg transition focus:outline-none focus:ring-2 ${
-                errors.confirmPassword
-                  ? 'border-red-400 focus:ring-red-400 bg-red-50/30'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              } ${otpSent ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-            />
-            {errors.confirmPassword && (
-              <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          {/* Submit Action */}
-          <div className="pt-2">
-            {!otpSent ? (
-              <button
-                type="button"
-                onClick={handleSendOTP}
-                disabled={sendingOtp}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold rounded-xl shadow-sm transition duration-200 flex items-center justify-center cursor-pointer text-sm"
-              >
-                {sendingOtp ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                    </svg>
-                    Checking Email & Sending OTP...
-                  </span>
-                ) : (
-                  'Send OTP to Verify Email'
-                )}
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={verifying || otp.length !== 6}
-                className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-sm transition duration-200 flex items-center justify-center cursor-pointer text-sm"
-              >
-                {verifying ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                    </svg>
-                    Verifying OTP & Registering...
-                  </span>
-                ) : (
-                  'Verify OTP & Complete Registration'
-                )}
-              </button>
-            )}
-          </div>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="text-indigo-600 font-semibold hover:underline">
-            Log in
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
