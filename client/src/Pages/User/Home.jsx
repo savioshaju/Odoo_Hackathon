@@ -70,12 +70,12 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
             <div className="bg-white p-5 rounded-xl border border-softLavender shadow-xs">
               <p className="text-xs text-slateGray font-bold uppercase tracking-wider">Annual Recurring Run-Rate</p>
-              <p className="text-2xl font-black text-deepNavy mt-1">$2,983,800.00</p>
+              <p className="text-2xl font-black text-deepNavy mt-1">$2,983,800.00.00</p>
               <p className="text-xs text-emerald-600 font-semibold mt-1">↑ +32.4% year-over-year</p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-softLavender shadow-xs">
               <p className="text-xs text-slateGray font-bold uppercase tracking-wider">Global Subscribers</p>
-              <p className="text-2xl font-black text-deepNavy mt-1">42,910</p>
+              <p className="text-2xl font-black text-deepNavy mt-1">0</p>
               <p className="text-xs text-primary font-semibold mt-1">across 64 countries</p>
             </div>
             <div className="bg-white p-5 rounded-xl border border-softLavender shadow-xs">

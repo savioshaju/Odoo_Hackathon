@@ -138,30 +138,30 @@ export default function Login() {
                     <TrendingUp className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs text-white/60 font-medium">Monthly Recurring Revenue</p>
-                    <p className="text-lg font-bold text-white tracking-tight">$184,250.00</p>
+                    <p className="text-xs text-white/60 font-medium">Recurring Revenue Engine</p>
+                    <p className="text-sm font-bold text-white tracking-tight">Active Automation</p>
                   </div>
                 </div>
                 <span className="px-2.5 py-1 text-xs font-bold text-[#38C6D9] bg-[#38C6D9]/10 rounded-lg border border-[#38C6D9]/20">
-                  +24.8%
+                  Live
                 </span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-gradient-to-r from-[#8067F8] to-[#38C6D9] h-full rounded-full w-[78%]" />
+                <div className="bg-gradient-to-r from-[#8067F8] to-[#38C6D9] h-full rounded-full w-[100%]" />
               </div>
             </div>
 
             {/* Small glass decorative pill */}
             <div className="absolute -bottom-4 right-4 glass-dark rounded-xl px-3 py-2 flex items-center gap-2 border border-white/25 shadow-xl">
               <ShieldCheck className="w-4 h-4 text-[#38C6D9]" />
-              <span className="text-xs font-semibold text-white/90">Zero Transaction Drift</span>
+              <span className="text-xs font-semibold text-white/90">Automated Reconciliations</span>
             </div>
           </div>
         </div>
 
-        {/* Bottom: Testimonial or Trust Banner */}
+        {/* Bottom: Trust Banner */}
         <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-white/60">
-          <span>Trusted by 4,200+ fast-growing modern teams</span>
+          <span>Enterprise Grade SOC-2 Type II Certified</span>
           <span>© 2026 Brightloop Inc.</span>
         </div>
       </div>

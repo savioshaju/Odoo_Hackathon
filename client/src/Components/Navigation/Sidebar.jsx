@@ -148,7 +148,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold text-deepNavy truncate">{user?.name || 'Brightloop User'}</p>
-                <p className="text-[11px] text-slateGray truncate">{user?.email || 'user@brightloop.io'}</p>
+                <p className="text-[11px] text-slateGray truncate">{user?.email || ''}</p>
               </div>
             </NavLink>
             <button

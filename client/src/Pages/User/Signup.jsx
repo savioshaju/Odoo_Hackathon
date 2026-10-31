@@ -305,7 +305,7 @@ export default function Signup() {
                   disabled={otpSent}
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="Alex Rivera"
+                  placeholder="Full name"
                   className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
                     errors.name ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
                   } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}
@@ -330,7 +330,7 @@ export default function Signup() {
                     disabled={otpSent}
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="alex@company.com"
+                    placeholder="name@company.com"
                     className={`w-full pl-10 pr-4 py-2.5 bg-white text-sm text-deepNavy border rounded-xl shadow-xs transition duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${
                       errors.email ? 'border-red-400 focus:border-red-500' : 'border-softLavender focus:border-primary'
                     } ${otpSent ? 'bg-gray-100 cursor-not-allowed opacity-75' : ''}`}

@@ -150,7 +150,7 @@ export default function TopNav({ onToggleMobileMenu }) {
             <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-softLavender p-2 z-50 animate-fadeIn">
               <div className="px-3 py-2 border-b border-softLavender">
                 <p className="text-xs font-bold text-deepNavy">{user?.name || 'Brightloop User'}</p>
-                <p className="text-[11px] text-slateGray truncate">{user?.email || 'user@brightloop.io'}</p>
+                <p className="text-[11px] text-slateGray truncate">{user?.email || ''}</p>
               </div>
               <div className="py-1 text-xs">
                 <Link
