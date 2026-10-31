@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../Config/axiosInstance';
@@ -7,12 +7,23 @@ import { saveUserData } from '../../store/slice/userSlice';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
 
   const [formData, setFormData] = useState({
     identifier: '',
     password: '',
   });
+
+  // Automatically pre-fill the identifier if navigated from successful signup
+  useEffect(() => {
+    if (location.state?.email) {
+      setFormData((prev) => ({
+        ...prev,
+        identifier: location.state.email,
+      }));
+    }
+  }, [location.state]);
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
