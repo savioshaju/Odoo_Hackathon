@@ -522,3 +522,39 @@ UPDATE catalogue.discounts
 SET used_count = GREATEST(0, used_count - 1)
 WHERE id = $1
 RETURNING *;
+
+-- -----------------------------------------------------------------------------
+-- Finance Dashboard Queries (Owner: Kishan)
+-- -----------------------------------------------------------------------------
+
+-- name: finance_summary
+SELECT
+  COALESCE((SELECT count(*)::bigint FROM standin.subscriptions WHERE status = 'active'), 0) AS active_subscriptions,
+  COALESCE((SELECT sum(total)::bigint FROM billing.invoices WHERE status IN ('confirmed', 'paid')), 0) AS invoiced_total,
+  COALESCE((SELECT sum(paid_total)::bigint FROM billing.invoices WHERE status IN ('confirmed', 'paid')), 0) AS collected_total,
+  COALESCE((SELECT sum(total - paid_total)::bigint FROM billing.invoices WHERE status = 'confirmed'), 0) AS outstanding_total,
+  COALESCE((SELECT sum(total - paid_total)::bigint FROM billing.invoices WHERE status = 'confirmed' AND due_date < $1::date), 0) AS overdue_total,
+  COALESCE((SELECT count(*)::bigint FROM billing.invoices WHERE status = 'confirmed' AND due_date < $1::date), 0) AS overdue_count;
+
+-- name: finance_active_subscriptions_for_mrr
+SELECT s.id, p.frequency, COALESCE(sum(l.unit_price * l.quantity), 0)::bigint AS subscription_amount
+FROM standin.subscriptions s
+JOIN standin.plans p ON p.id = s.plan_id
+LEFT JOIN standin.subscription_lines l ON l.subscription_id = s.id
+WHERE s.status = 'active'
+GROUP BY s.id, p.frequency;
+
+-- name: finance_aging_buckets
+SELECT
+  CASE
+    WHEN due_date >= $1::date - 30 THEN '1-30 days'
+    WHEN due_date >= $1::date - 60 THEN '31-60 days'
+    WHEN due_date >= $1::date - 90 THEN '61-90 days'
+    ELSE '90+ days'
+  END AS bucket,
+  count(*)::bigint AS invoice_count,
+  sum(total - paid_total)::bigint AS overdue_amount
+FROM billing.invoices
+WHERE status = 'confirmed' AND due_date < $1::date
+GROUP BY 1
+ORDER BY 1;

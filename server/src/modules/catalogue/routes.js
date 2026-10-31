@@ -4,6 +4,8 @@
 import { Router } from 'express';
 import { badRequest, forbidden, notFound } from '../../errors.js';
 import { formatINR, rupees } from '../billing/engine/money.js';
+import { getClock, today } from '../billing/clock.js';
+import { monthlyEquivalent } from '../billing/engine/mrr.js';
 
 export function createCatalogueRouter(db) {
   const router = Router();
@@ -199,6 +201,57 @@ export function createCatalogueRouter(db) {
   router.post('/discounts/:id/release', async (req, res) => {
     const updated = await db.maybeOne('catalogue_discount_release', [req.params.id]);
     res.json(updated || { ok: true });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // FINANCE DASHBOARD (Owner: Kishan)
+  // Metrics: Active, Invoiced, Collected, Outstanding, Overdue, and MRR
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // GET /api/catalogue/dashboard
+  router.get('/dashboard', async (_req, res) => {
+    const clock = await getClock(db);
+    const currentDate = clock.today;
+
+    // 1. Fetch headline financial figures
+    const summary = await db.one('finance_summary', [currentDate]);
+
+    // 2. Fetch active subscriptions to compute exact MRR dynamically
+    const subs = await db.rows('finance_active_subscriptions_for_mrr');
+    const totalMrrPaise = subs.reduce((acc, sub) => {
+      try {
+        return acc + monthlyEquivalent(sub.subscription_amount, sub.frequency);
+      } catch {
+        return acc;
+      }
+    }, 0);
+
+    // 3. Fetch aging buckets for outstanding overdue invoices
+    const agingRows = await db.rows('finance_aging_buckets', [currentDate]);
+    const agingBuckets = agingRows.map((b) => ({
+      ...b,
+      overdue_amount_display: formatINR(b.overdue_amount),
+    }));
+
+    res.json({
+      as_of_date: currentDate,
+      simulated: clock.simulated,
+      metrics: {
+        active_subscriptions: summary.active_subscriptions,
+        mrr: totalMrrPaise,
+        mrr_display: formatINR(totalMrrPaise),
+        invoiced_total: summary.invoiced_total,
+        invoiced_total_display: formatINR(summary.invoiced_total),
+        collected_total: summary.collected_total,
+        collected_total_display: formatINR(summary.collected_total),
+        outstanding_total: summary.outstanding_total,
+        outstanding_total_display: formatINR(summary.outstanding_total),
+        overdue_total: summary.overdue_total,
+        overdue_total_display: formatINR(summary.overdue_total),
+        overdue_count: summary.overdue_count,
+      },
+      aging_buckets: agingBuckets,
+    });
   });
 
   return router;
