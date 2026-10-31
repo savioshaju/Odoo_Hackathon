@@ -1,4 +1,5 @@
 const express = require('express')
+const { registerCompany, loginCompany, getCompanyProfile, updateCompanyProfile, changeCompanyPassword, deleteCompanyAccount } = require('../controller/companyController')
 
 const router = express.Router()
 
@@ -8,14 +9,14 @@ router.use((req, res, next) => {
 })
 
 // Public routes
-router.post('/register')
-router.post('/login')
+router.post('/register', registerCompany)
+router.post('/login', loginCompany)
 
 // Company routes
-router.get('/profile')
-router.put('/profile')
-router.patch('/change-password')
-router.delete('/account')
+router.get('/profile', getCompanyProfile)
+router.put('/profile', updateCompanyProfile)
+router.patch('/change-password', changeCompanyPassword)
+router.delete('/account', deleteCompanyAccount)
 
 // Admin routes
 router.get('/')
