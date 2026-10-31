@@ -14,6 +14,7 @@
     "db:reset": "node server/scripts/db-setup.js --reset",
     "test:vishakh": "npm run test --workspace server && npm run test --workspace client",
     "test:kishan": "npm run test:kishan --workspace server",
+    "seed:10k": "node server/scripts/seed-10k.js",
     "test:engine": "npm run test:engine --workspace server",
     "build": "npm run build --workspace client"
   },

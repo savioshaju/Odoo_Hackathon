@@ -558,3 +558,140 @@ FROM billing.invoices
 WHERE status = 'confirmed' AND due_date < $1::date
 GROUP BY 1
 ORDER BY 1;
+
+-- -----------------------------------------------------------------------------
+-- 10k Seed Queries (Owner: Kishan)
+-- -----------------------------------------------------------------------------
+
+-- name: seed_clear_all
+DELETE FROM billing.payments;
+DELETE FROM billing.invoice_discounts;
+DELETE FROM billing.invoice_lines;
+DELETE FROM billing.invoices;
+DELETE FROM standin.discount_products;
+DELETE FROM standin.discounts;
+DELETE FROM standin.subscription_lines;
+DELETE FROM standin.subscription_active_ranges;
+DELETE FROM standin.subscriptions;
+DELETE FROM standin.plans;
+DELETE FROM standin.products;
+DELETE FROM standin.customers;
+DELETE FROM catalogue.discount_products;
+DELETE FROM catalogue.discounts;
+DELETE FROM catalogue.product_variants;
+DELETE FROM catalogue.plans;
+DELETE FROM catalogue.products;
+
+-- name: seed_insert_catalogue_defaults
+INSERT INTO catalogue.products (id, name, kind, sales_price, cost_price, tax_rate_bp, notes)
+VALUES
+  (1, 'Brightloop CRM', 'service', 200000, 80000, 1800, 'Core CRM platform'),
+  (2, 'Brightloop HR Suite', 'service', 350000, 120000, 1800, 'Human resources management'),
+  (3, 'Brightloop Analytics', 'service', 150000, 50000, 1800, 'Data and business intelligence add-on'),
+  (4, 'Brightloop ERP Core', 'service', 500000, 200000, 1800, 'Enterprise resource planning'),
+  (5, 'Brightloop Helpdesk', 'service', 120000, 40000, 1800, 'Ticketing and customer support')
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, sales_price = EXCLUDED.sales_price, cost_price = EXCLUDED.cost_price;
+
+INSERT INTO catalogue.product_variants (product_id, name, price_addon)
+VALUES
+  (1, 'Odoo Brand Edition', 56000),
+  (1, 'Enterprise 24/7 SLA', 120000),
+  (2, 'Payroll Auto-Tax Addon', 80000),
+  (4, 'Dedicated Cloud Instance', 250000)
+ON CONFLICT DO NOTHING;
+
+INSERT INTO standin.products (id, name, kind, sales_price, cost_price, tax_rate_bp)
+VALUES
+  (1, 'Brightloop CRM', 'service', 200000, 80000, 1800),
+  (2, 'Brightloop HR Suite', 'service', 350000, 120000, 1800),
+  (3, 'Brightloop Analytics', 'service', 150000, 50000, 1800),
+  (4, 'Brightloop ERP Core', 'service', 500000, 200000, 1800),
+  (5, 'Brightloop Helpdesk', 'service', 120000, 40000, 1800)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, sales_price = EXCLUDED.sales_price;
+
+INSERT INTO standin.plans (id, name, frequency, min_quantity, auto_close, closable, pausable, renewable)
+VALUES
+  (1, 'Monthly Starter', 'monthly', 1, false, true, true, true),
+  (2, 'Yearly Business', 'yearly', 1, false, true, true, true),
+  (3, 'Weekly Sprint', 'weekly', 1, false, true, false, true),
+  (4, 'Daily Enterprise', 'daily', 1, true, true, true, true)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, frequency = EXCLUDED.frequency;
+
+INSERT INTO catalogue.plans (id, name, frequency, price, min_quantity, auto_close, closable, pausable, renewable)
+VALUES
+  (1, 'Monthly Starter', 'monthly', 200000, 1, false, true, true, true),
+  (2, 'Yearly Business', 'yearly', 2000000, 1, false, true, true, true),
+  (3, 'Weekly Sprint', 'weekly', 60000, 1, false, true, false, true),
+  (4, 'Daily Enterprise', 'daily', 10000, 1, true, true, true, true)
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name, frequency = EXCLUDED.frequency;
+
+-- name: seed_generate_10k_data
+INSERT INTO standin.customers (id, name, email, state_code, address)
+SELECT
+  i,
+  'Customer ' || i,
+  'client' || i || '@brightloop.io',
+  CASE (i % 5)
+    WHEN 0 THEN 'MH'
+    WHEN 1 THEN 'KA'
+    WHEN 2 THEN 'DL'
+    WHEN 3 THEN 'TN'
+    ELSE 'MH'
+  END,
+  'Tech Park Street ' || i
+FROM generate_series(1, 1000) AS i
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO standin.subscriptions (id, number, customer_id, plan_id, start_date, expiry_date, payment_terms_days, status)
+SELECT
+  i,
+  'SUB-' || lpad(i::text, 6, '0'),
+  1 + (i % 1000),
+  1 + (i % 4),
+  ('2026-01-01'::date - ((i % 300) || ' days')::interval)::date,
+  CASE WHEN (i % 4 = 1) THEN ('2027-01-01'::date) ELSE NULL END,
+  15,
+  CASE
+    WHEN (i % 20 < 15) THEN 'active'
+    WHEN (i % 20 < 17) THEN 'closed'
+    WHEN (i % 20 < 19) THEN 'paused'
+    ELSE 'draft'
+  END
+FROM generate_series(1, 10000) AS i
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO standin.subscription_lines (subscription_id, product_id, description, quantity, unit_price, tax_rate_bp, start_date)
+SELECT
+  i,
+  1 + (i % 5),
+  'Brightloop Software Seat',
+  1 + (i % 3),
+  CASE (i % 5)
+    WHEN 0 THEN 256000
+    WHEN 1 THEN 350000
+    WHEN 2 THEN 150000
+    WHEN 3 THEN 500000
+    ELSE 120000
+  END,
+  1800,
+  ('2026-01-01'::date - ((i % 300) || ' days')::interval)::date
+FROM generate_series(1, 10000) AS i;
+
+INSERT INTO standin.subscription_active_ranges (subscription_id, from_date, to_date)
+SELECT
+  id,
+  start_date,
+  CASE WHEN status = 'closed' THEN start_date + 60 ELSE NULL END
+FROM standin.subscriptions
+WHERE status IN ('active', 'paused', 'closed');
+
+-- name: seed_count_check
+SELECT
+  (SELECT count(*)::bigint FROM standin.subscriptions) AS total_subscriptions,
+  (SELECT count(*)::bigint FROM standin.subscriptions WHERE status = 'active') AS active_subscriptions,
+  (SELECT count(*)::bigint FROM standin.customers) AS total_customers,
+  (SELECT count(*)::bigint FROM standin.subscription_lines) AS total_lines;
