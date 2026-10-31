@@ -5,13 +5,11 @@ import {
   CreditCard, 
   Calendar, 
   CheckCircle2, 
-  AlertCircle, 
   ArrowRight, 
   Plus, 
   Sparkles, 
   RefreshCw, 
   Receipt, 
-  ShieldCheck,
   XCircle
 } from 'lucide-react';
 import axiosInstance from '../../Config/axiosInstance';
@@ -26,13 +24,17 @@ export default function Subscriptions() {
   const fetchSubscriptions = async () => {
     setLoading(true);
     try {
-      const res = await axiosInstance.get('/subscriptions/my');
-      if (res.data?.success) {
+      // First try /subscriptions/my, then /subscriptions/user/:id
+      const userId = currentUser?._id || currentUser?.id;
+      let res = await axiosInstance.get('/subscriptions/my').catch(() => null);
+      if (!res?.data?.success && userId) {
+        res = await axiosInstance.get(`/subscriptions/user/${userId}`).catch(() => null);
+      }
+      if (res?.data?.success) {
         setSubscriptions(res.data.subscriptions || []);
       }
     } catch (err) {
       console.error('Error fetching subscriptions:', err);
-      // If 401 unauthenticated, handled by interceptors/guards
     } finally {
       setLoading(false);
     }
@@ -40,7 +42,7 @@ export default function Subscriptions() {
 
   useEffect(() => {
     fetchSubscriptions();
-  }, []);
+  }, [currentUser]);
 
   const handleCancelSubscription = async (id, planName) => {
     if (!window.confirm(`Are you sure you want to cancel your ${planName} subscription?`)) {
@@ -49,7 +51,9 @@ export default function Subscriptions() {
 
     setCancelingId(id);
     try {
-      const res = await axiosInstance.patch(`/subscriptions/${id}/cancel`);
+      const res = await axiosInstance.patch(`/subscriptions/${id}/cancel`).catch(() => 
+        axiosInstance.post(`/subscriptions/cancel/${id}`)
+      );
       if (res.data?.success) {
         toast.info(`Your ${planName} subscription has been canceled.`);
         fetchSubscriptions();
@@ -77,7 +81,7 @@ export default function Subscriptions() {
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slateGray mt-1">
-            Manage your subscribed plans, billing frequency, and renewal schedules.
+            Manage your subscribed plans, service renewals, and billing records.
           </p>
         </div>
 
@@ -112,6 +116,11 @@ export default function Subscriptions() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {subscriptions.map((sub) => {
               const isActive = sub.status === 'active';
+              const name = sub.serviceId?.name || sub.planName || 'Active Subscription';
+              const price = sub.amountPaid !== undefined ? sub.amountPaid : (sub.price || 0);
+              const nextDate = sub.endDate || sub.nextBillingDate;
+              const features = sub.serviceId?.features || sub.features || [];
+
               return (
                 <div
                   key={sub._id}
@@ -123,7 +132,7 @@ export default function Subscriptions() {
                     {/* Top pill & status */}
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-[11px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3" /> {sub.billingCycle} Plan
+                        <Sparkles className="w-3 h-3" /> {sub.serviceId?.duration ? `${sub.serviceId.duration} Days` : 'Subscription'}
                       </span>
                       <span
                         className={`text-xs font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
@@ -133,15 +142,18 @@ export default function Subscriptions() {
                         }`}
                       >
                         {isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                        {sub.status.toUpperCase()}
+                        {sub.status ? sub.status.toUpperCase() : 'ACTIVE'}
                       </span>
                     </div>
 
                     {/* Plan Name & Price */}
-                    <h3 className="text-xl font-black text-deepNavy">{sub.planName}</h3>
+                    <h3 className="text-xl font-black text-deepNavy">{name}</h3>
+                    {sub.serviceId?.description && (
+                      <p className="text-xs text-slateGray mt-1 line-clamp-2">{sub.serviceId.description}</p>
+                    )}
                     <div className="mt-2 flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-deepNavy">${sub.price}</span>
-                      <span className="text-xs font-semibold text-slateGray">/ {sub.billingCycle}</span>
+                      <span className="text-3xl font-black text-deepNavy">${price}</span>
+                      <span className="text-xs font-semibold text-slateGray">paid</span>
                     </div>
 
                     {/* Dates */}
@@ -151,29 +163,29 @@ export default function Subscriptions() {
                           <Calendar className="w-3.5 h-3.5 text-primary" /> Started:
                         </span>
                         <span className="font-semibold text-deepNavy">
-                          {new Date(sub.startDate).toLocaleDateString()}
+                          {sub.startDate ? new Date(sub.startDate).toLocaleDateString() : '—'}
                         </span>
                       </div>
-                      {isActive && (
+                      {nextDate && (
                         <div className="flex items-center justify-between">
                           <span className="flex items-center gap-1.5">
-                            <RefreshCw className="w-3.5 h-3.5 text-accent" /> Next Renewal:
+                            <RefreshCw className="w-3.5 h-3.5 text-accent" /> {isActive ? 'Expires / Renews:' : 'Ended:'}
                           </span>
                           <span className="font-bold text-primary">
-                            {new Date(sub.nextBillingDate).toLocaleDateString()}
+                            {new Date(nextDate).toLocaleDateString()}
                           </span>
                         </div>
                       )}
                     </div>
 
                     {/* Features summary */}
-                    {sub.features && sub.features.length > 0 && (
+                    {features.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-softLavender">
                         <p className="text-[11px] font-bold uppercase tracking-wider text-slateGray mb-2">
                           Included Benefits:
                         </p>
                         <ul className="space-y-1.5 text-xs text-slateGray">
-                          {sub.features.slice(0, 3).map((f, i) => (
+                          {features.slice(0, 3).map((f, i) => (
                             <li key={i} className="flex items-start gap-2">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                               <span className="line-clamp-1">{f}</span>
@@ -196,9 +208,9 @@ export default function Subscriptions() {
 
                     {isActive && (
                       <button
-                        onClick={() => handleCancelSubscription(sub._id, sub.planName)}
+                        onClick={() => handleCancelSubscription(sub._id, name)}
                         disabled={cancelingId === sub._id}
-                        className="text-xs font-bold text-red-500 hover:text-red-700 transition cursor-pointer"
+                        className="text-xs font-bold text-red-500 hover:text-red-700 hover:underline cursor-pointer disabled:opacity-50"
                       >
                         {cancelingId === sub._id ? 'Canceling...' : 'Cancel Subscription'}
                       </button>
@@ -211,27 +223,21 @@ export default function Subscriptions() {
         </div>
       ) : (
         /* Empty State */
-        <div className="bg-white rounded-3xl border border-softLavender p-10 sm:p-14 text-center shadow-premium">
-          <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4 border border-primary/20">
-            <CreditCard className="w-8 h-8" />
+        <div className="bg-white rounded-2xl border border-softLavender p-10 sm:p-14 text-center shadow-premium">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <CreditCard className="w-7 h-7" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-deepNavy">No Active Subscriptions Found</h2>
-          <p className="text-xs sm:text-sm text-slateGray max-w-md mx-auto mt-2">
-            You do not currently have any active billing plans attached to your Brightloop account. Choose a plan to unlock automated workflows and premium SaaS features.
+          <h2 className="text-lg font-black text-deepNavy">No Active Subscriptions Found</h2>
+          <p className="text-xs text-slateGray max-w-md mx-auto mt-1 leading-relaxed">
+            You do not currently have any active software subscriptions. Browse the plans catalog to get started.
           </p>
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-6">
             <Link
               to="/subscription-plans"
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition cursor-pointer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
               <span>Explore Subscription Plans</span>
-            </Link>
-            <Link
-              to="/dashboard"
-              className="px-5 py-3 bg-mainBg hover:bg-softLavender/40 text-deepNavy font-bold text-xs rounded-xl border border-softLavender transition"
-            >
-              Back to Dashboard
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -239,4 +245,3 @@ export default function Subscriptions() {
     </div>
   );
 }
-

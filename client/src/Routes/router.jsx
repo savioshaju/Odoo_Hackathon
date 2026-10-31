@@ -11,7 +11,9 @@ import SubscriptionPlans from "../Pages/User/SubscriptionPlans";
 import Invoices from "../Pages/User/Invoices";
 import ForgotPassword from "../Pages/User/ForgotPassword";
 import AdminHome from "../Pages/Admin/AdminHome";
-import GenericCatalogPage from "../Pages/Shared/GenericCatalogPage";
+import CustomerDirectory from "../Pages/Admin/CustomerDirectory";
+import ProductVariants from "../Pages/Admin/ProductVariants";
+import AdminPayments from "../Pages/Admin/AdminPayments";
 import RoleBasedRoute from "./RoleBasedRoute";
 
 const router = createBrowserRouter([
@@ -32,10 +34,6 @@ const router = createBrowserRouter([
                 { path: 'subscriptions', element: <Subscriptions /> },
                 { path: 'subscription-plans', element: <SubscriptionPlans /> },
                 { path: 'invoices', element: <Invoices /> },
-                { 
-                  path: 'products', 
-                  element: <GenericCatalogPage title="Available Products & Modules" subtitle="Explore software modules and SaaS add-ons." entityName="Product" canMutate={false} /> 
-                },
               ]
             },
 
@@ -44,31 +42,11 @@ const router = createBrowserRouter([
               path: 'admin',
               element: <RoleBasedRoute allowedRoles={['admin']} />,
               children: [
-                { index: true, element: <AdminHome defaultTab="overview" /> },
-                { 
-                  path: 'customers', 
-                  element: <AdminHome defaultTab="users" /> 
-                },
-                { 
-                  path: 'product-variants', 
-                  element: <AdminHome defaultTab="plans" /> 
-                },
-                { 
-                  path: 'payments', 
-                  element: <AdminHome defaultTab="subscriptions" /> 
-                },
-                { 
-                  path: 'discounts', 
-                  element: <GenericCatalogPage title="Discounts & Coupons (Admin)" subtitle="Manage promotional vouchers and rebates." entityName="Discount" canMutate={true} /> 
-                },
-                { 
-                  path: 'reports', 
-                  element: <AdminHome defaultTab="overview" /> 
-                },
-                { 
-                  path: 'settings', 
-                  element: <GenericCatalogPage title="Workspace Settings (Admin)" subtitle="Configure organization brand, webhook endpoints, and tax profiles." entityName="Setting" canMutate={true} /> 
-                },
+                { index: true, element: <AdminHome /> },
+                { path: 'customers', element: <CustomerDirectory /> },
+                { path: 'services', element: <ProductVariants /> },
+                { path: 'product-variants', element: <ProductVariants /> },
+                { path: 'payments', element: <AdminPayments /> },
               ]
             }
         ]

@@ -65,7 +65,11 @@ export default function Login() {
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
         }
-        navigate('/dashboard');
+        if (response.data.user?.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         toast.error(response.data?.message || 'Login failed');
       }

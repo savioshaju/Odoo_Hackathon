@@ -3,16 +3,11 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
   LayoutDashboard, 
-  Package, 
   Layers, 
   CreditCard, 
   Users, 
-  FileText, 
   Receipt, 
   DollarSign, 
-  Percent, 
-  BarChart3, 
-  Settings, 
   ChevronLeft, 
   ChevronRight, 
   LogOut, 
@@ -71,7 +66,6 @@ export default function Sidebar({
         { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['user', 'admin'] },
         { label: 'My Subscriptions', icon: CreditCard, path: '/subscriptions', roles: ['user', 'admin'] },
         { label: 'Subscription Plans', icon: Layers, path: '/subscription-plans', roles: ['user', 'admin'] },
-        { label: 'Products', icon: Package, path: '/products', roles: ['user', 'admin'] },
         { label: 'My Invoices', icon: Receipt, path: '/invoices', roles: ['user', 'admin'] },
         { label: 'My Profile', icon: UserIcon, path: '/profile', roles: ['user', 'admin'] },
       ]
@@ -81,11 +75,8 @@ export default function Sidebar({
       items: [
         { label: 'Admin Overview', icon: LayoutDashboard, path: '/admin', roles: ['admin'] },
         { label: 'Customer Directory', icon: Users, path: '/admin/customers', roles: ['admin'] },
-        { label: 'Product Variants', icon: Layers, path: '/admin/product-variants', roles: ['admin'] },
-        { label: 'Discounts & Coupons', icon: Percent, path: '/admin/discounts', roles: ['admin'] },
+        { label: 'Service Packages', icon: Layers, path: '/admin/services', roles: ['admin'] },
         { label: 'Payments', icon: DollarSign, path: '/admin/payments', roles: ['admin'] },
-        { label: 'Financial Reports', icon: BarChart3, path: '/admin/reports', roles: ['admin'] },
-        { label: 'Workspace Settings', icon: Settings, path: '/admin/settings', roles: ['admin'] },
       ]
     }
   ];
