@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { 
   Package, 
   Plus, 
@@ -10,10 +11,15 @@ import {
 export default function GenericCatalogPage({ 
   title = "Products Catalog", 
   subtitle = "Manage active SaaS subscription products, base pricing, and plans.",
-  entityName = "Product" 
+  entityName = "Product",
+  canMutate = false,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [items] = useState([]); // Zero dummy items; ready for database records
+  const currentUser = useSelector((state) => state.user?.userData);
+
+  // Users can only view; only staff or admin can create/mutate items
+  const isPrivileged = currentUser?.role === 'admin' || currentUser?.role === 'staff' || canMutate;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -29,10 +35,12 @@ export default function GenericCatalogPage({
           <p className="text-xs text-slateGray mt-1">{subtitle}</p>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition cursor-pointer self-start sm:self-auto">
-          <Plus className="w-4 h-4" />
-          <span>Add New {entityName}</span>
-        </button>
+        {isPrivileged && (
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-secondary hover:from-primary-dark hover:to-primary text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition cursor-pointer self-start sm:self-auto">
+            <Plus className="w-4 h-4" />
+            <span>Add New {entityName}</span>
+          </button>
+        )}
       </div>
 
       {/* Search & Filter Bar */}
@@ -87,12 +95,14 @@ export default function GenericCatalogPage({
             </div>
             <h3 className="text-sm font-bold text-deepNavy">No {title} Recorded</h3>
             <p className="text-xs text-slateGray max-w-sm mt-1">
-              There are no {title.toLowerCase()} in your database yet. Click below to add your first one.
+              There are no {title.toLowerCase()} in your database yet.
             </p>
-            <button className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition cursor-pointer">
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create {entityName}</span>
-            </button>
+            {isPrivileged && (
+              <button className="mt-4 flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition cursor-pointer">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Create {entityName}</span>
+              </button>
+            )}
           </div>
         )}
       </div>

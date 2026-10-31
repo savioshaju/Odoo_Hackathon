@@ -17,8 +17,7 @@ import {
   ChevronRight, 
   LogOut, 
   User as UserIcon,
-  HelpCircle,
-  Sparkles
+  ShieldCheck
 } from 'lucide-react';
 import { clearUserData } from '../../store/slice/userSlice';
 import axiosInstance from '../../Config/axiosInstance';
@@ -30,6 +29,9 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const userRole = user?.role || 'user';
+  const isPrivileged = userRole === 'admin' || userRole === 'staff';
 
   const handleLogout = async () => {
     try {
@@ -48,34 +50,34 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     {
       group: 'Core Platform',
       items: [
-        { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-        { label: 'Subscriptions', icon: CreditCard, path: '/subscriptions' },
-        { label: 'Subscription Plans', icon: Layers, path: '/subscription-plans' },
-        { label: 'Customers', icon: Users, path: '/customers' },
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['user', 'staff', 'admin'] },
+        { label: 'Subscriptions', icon: CreditCard, path: '/subscriptions', roles: ['user', 'staff', 'admin'] },
+        { label: 'Subscription Plans', icon: Layers, path: '/subscription-plans', roles: ['user', 'staff', 'admin'] },
+        { label: 'Customers', icon: Users, path: '/customers', roles: ['staff', 'admin'] },
       ]
     },
     {
       group: 'Catalog & Inventory',
       items: [
-        { label: 'Products', icon: Package, path: '/products' },
-        { label: 'Product Variants', icon: Layers, path: '/product-variants' },
-        { label: 'Discounts', icon: Percent, path: '/discounts' },
+        { label: 'Products', icon: Package, path: '/products', roles: ['user', 'staff', 'admin'] },
+        { label: 'Product Variants', icon: Layers, path: '/product-variants', roles: ['staff', 'admin'] },
+        { label: 'Discounts', icon: Percent, path: '/discounts', roles: ['staff', 'admin'] },
       ]
     },
     {
       group: 'Billing & Finance',
       items: [
-        { label: 'Quotations', icon: FileText, path: '/quotations' },
-        { label: 'Invoices', icon: Receipt, path: '/invoices' },
-        { label: 'Payments', icon: DollarSign, path: '/payments' },
-        { label: 'Reports & Analytics', icon: BarChart3, path: '/reports' },
+        { label: 'Quotations', icon: FileText, path: '/quotations', roles: ['staff', 'admin'] },
+        { label: 'Invoices', icon: Receipt, path: '/invoices', roles: ['user', 'staff', 'admin'] },
+        { label: 'Payments', icon: DollarSign, path: '/payments', roles: ['staff', 'admin'] },
+        { label: 'Reports & Analytics', icon: BarChart3, path: '/reports', roles: ['staff', 'admin'] },
       ]
     },
     {
       group: 'System',
       items: [
-        { label: 'Profile', icon: UserIcon, path: '/profile' },
-        { label: 'Settings', icon: Settings, path: '/settings' },
+        { label: 'Profile', icon: UserIcon, path: '/profile', roles: ['user', 'staff', 'admin'] },
+        { label: 'Settings', icon: Settings, path: '/settings', roles: ['staff', 'admin'] },
       ]
     }
   ];
@@ -105,36 +107,41 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           </button>
         </div>
 
-        {/* Navigation Items */}
+        {/* Navigation Items (Filtered dynamically based on user role) */}
         <div className="py-4 px-3 space-y-6 overflow-y-auto max-h-[calc(100vh-140px)]">
-          {navGroups.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-1">
-              {!collapsed && (
-                <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slateGray/70">
-                  {group.group}
-                </div>
-              )}
-              {group.items.map((item, iIdx) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
-                return (
-                  <NavLink
-                    key={iIdx}
-                    to={item.path}
-                    title={collapsed ? item.label : undefined}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group cursor-pointer ${
-                      isActive
-                        ? 'bg-[#5145E5]/10 text-primary border border-primary/20 shadow-xs'
-                        : 'text-slateGray hover:text-deepNavy hover:bg-mainBg'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-slateGray group-hover:text-deepNavy'}`} />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </NavLink>
-                );
-              })}
-            </div>
-          ))}
+          {navGroups.map((group, gIdx) => {
+            const visibleItems = group.items.filter(item => item.roles.includes(userRole));
+            if (visibleItems.length === 0) return null;
+
+            return (
+              <div key={gIdx} className="space-y-1">
+                {!collapsed && (
+                  <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slateGray/70">
+                    {group.group}
+                  </div>
+                )}
+                {visibleItems.map((item, iIdx) => {
+                  const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <NavLink
+                      key={iIdx}
+                      to={item.path}
+                      title={collapsed ? item.label : undefined}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group cursor-pointer ${
+                        isActive
+                          ? 'bg-[#5145E5]/10 text-primary border border-primary/20 shadow-xs'
+                          : 'text-slateGray hover:text-deepNavy hover:bg-mainBg'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-slateGray group-hover:text-deepNavy'}`} />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -147,8 +154,13 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 {user?.name ? user.name[0] : 'U'}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-deepNavy truncate">{user?.name || 'Brightloop User'}</p>
-                <p className="text-[11px] text-slateGray truncate">{user?.email || ''}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-deepNavy truncate">{user?.name || 'Account'}</p>
+                  <span className="px-1.5 py-0.2 bg-primary/10 text-primary rounded text-[9px] font-bold uppercase">
+                    {userRole}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slateGray truncate">{user?.email}</p>
               </div>
             </NavLink>
             <button
@@ -164,7 +176,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
             <NavLink 
               to="/profile" 
               className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#5145E5] to-[#8067F8] text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs hover:opacity-90 transition"
-              title={user?.name || 'Profile'}
+              title={`${user?.name || 'Profile'} (${userRole})`}
             >
               {user?.name ? user.name[0] : 'U'}
             </NavLink>
@@ -181,4 +193,3 @@ export default function Sidebar({ collapsed, setCollapsed }) {
     </aside>
   );
 }
-
