@@ -24,7 +24,7 @@ async function userAuth(req, res, next) {
 
         const role = decodedToken.role
 
-        if (role !== 'user') {
+        if (role !== 'user' && role !== 'admin') {
             return res.status(403).json({ success: false, message: 'Forbidden: Unauthorized user' })
         }
 
