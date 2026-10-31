@@ -1,4 +1,5 @@
 const express = require('express')
+const { userSignup, userLogin, userLogout, getUserProfile, updateUserProfile, deleteUserAccount, changeUserPassword, forgotUserPassword, resetUserPassword } = require('../controller/userController')
 const router = express.Router() 
 
 router.use((req, res, next) => {
@@ -7,19 +8,19 @@ router.use((req, res, next) => {
 })
 
 // Authentication
-router.post('/signup')
-router.post('/login')
-router.post('/logout')
+router.post('/signup', userSignup)
+router.post('/login', userLogin)
+router.post('/logout', userLogout)
 
 // Profile
-router.get('/profile')
-router.put('/profile')
-router.delete('/account')
+router.get('/profile', getUserProfile)
+router.put('/profile', updateUserProfile)
+router.delete('/account', deleteUserAccount)
 
 // Password Management
-router.put('/change-password')
-router.post('/forgot-password')
-router.post('/reset-password')
+router.put('/change-password', changeUserPassword)
+router.post('/forgot-password', forgotUserPassword)
+router.post('/reset-password', resetUserPassword)
 
 // User Management
 router.get('/')
